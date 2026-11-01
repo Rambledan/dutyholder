@@ -32,15 +32,20 @@ export function InviteButton(props: {
         )}
       </div>
       {result && !result.ok && <p className="text-xs text-destructive">{result.error}</p>}
-      {result?.ok && result.sent && <p className="text-xs text-green-700 dark:text-green-400">Invite emailed to {result.email}.</p>}
-      {result?.ok && !result.sent && (
+      {result?.ok && result.sent && (
+        <p className="text-xs text-green-700 dark:text-green-400">
+          {result.existingAccount ? `They already have an account: invitation emailed to ${result.email}.` : `Invite emailed to ${result.email}.`}
+        </p>
+      )}
+      {result?.ok && !result.sent && !result.link && <p className="max-w-xs text-xs text-muted-foreground">{result.reason}</p>}
+      {result?.ok && !result.sent && result.link && (
         <div className="max-w-xs space-y-1 text-xs">
           <p className="text-muted-foreground">{result.reason} Send them this link yourself (works once, 7 days):</p>
           <div className="flex gap-1">
-            <input readOnly value={result.link} className="min-w-0 flex-1 rounded border bg-muted px-1.5 py-1 font-mono"
+            <input readOnly value={result.link ?? ""} className="min-w-0 flex-1 rounded border bg-muted px-1.5 py-1 font-mono"
               onFocus={(e) => e.currentTarget.select()} />
             <Button type="button" size="sm" variant="outline" onClick={async () => {
-              await navigator.clipboard.writeText(result.link);
+              await navigator.clipboard.writeText(result.link ?? "");
               setCopied(true);
             }}>
               {copied ? "Copied" : "Copy"}

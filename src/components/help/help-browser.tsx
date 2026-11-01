@@ -2,7 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { HELP_CATEGORIES, HELP_TERMS, HELP_TOPICS, type HelpBlock } from "@/lib/help/content";
+import { DEMO_ENABLED } from "@/lib/features";
+import { HELP_CATEGORIES, HELP_TERMS, HELP_TOPICS as ALL_TOPICS, type HelpBlock } from "@/lib/help/content";
+
+// Topics for switched-off features are hidden, along with their terms.
+const HELP_TOPICS = ALL_TOPICS.filter((t) => DEMO_ENABLED || t.feature !== "demo");
+const VISIBLE_TOPIC_IDS = new Set(HELP_TOPICS.map((t) => t.id));
 
 function text(blocks: HelpBlock[]): string {
   return blocks.map((b) => ("p" in b ? b.p : "note" in b ? b.note : b.list.join(" "))).join(" ");
@@ -30,6 +35,7 @@ export function HelpBrowser() {
   );
   const terms = useMemo(
     () => Object.values(HELP_TERMS)
+      .filter((t) => VISIBLE_TOPIC_IDS.has(t.topic))
       .filter((t) => !q || `${t.label} ${t.definition}`.toLowerCase().includes(q))
       .sort((a, b) => a.label.localeCompare(b.label)),
     [q],

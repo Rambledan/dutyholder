@@ -12,6 +12,8 @@ export type HelpTopic = {
   category: "Getting started" | "The law" | "Roles" | "Doing your tasks" | "Running a project" | "Security and records";
   summary: string;
   body: HelpBlock[];
+  // Hidden from the Help page while that feature is switched off.
+  feature?: "demo";
 };
 
 export const HELP_TOPICS: HelpTopic[] = [
@@ -30,6 +32,18 @@ export const HELP_TOPICS: HelpTopic[] = [
         "When everything is green, the owner exports the evidence pack.",
       ] },
       { note: "This app helps you record what the law asks for. It is not legal advice." },
+    ],
+  },
+  {
+    id: "partners",
+    title: "One sign-in, many partners",
+    category: "Getting started",
+    summary: "Use one account with every owner who invites you, and accept each project yourself.",
+    body: [
+      { p: "You only ever need one Dutyholder account, whoever invites you. If a different partner (project owner) adds you to a project, you'll get an invitation instead of a new sign-up link. It appears on your home page and on My details: choose Accept or Decline." },
+      { p: "Nothing about you is shared with a partner until you accept: they can't see your details or your competence records before then, and you won't get reminders for that project." },
+      { p: "Save your details (name, company, job title, phone, professional memberships) and your competence passport once, on My details. Every project uses them: your details appear on team lists and appointment letters, and when a project asks for your competence statement you can use your latest version with one click." },
+      { p: "My details also lists who you work with: each partner who has invited you, and your projects with them." },
     ],
   },
   {
@@ -175,7 +189,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     body: [
       { p: "Regulation 11F says everyone who designs or builds must have the skills, knowledge, experience and behaviours needed for their work (and, for a firm, the organisational capability). Regulation 11Q(4) spells out three behaviours: refusing work that wouldn't comply, cooperating with others, and not taking on work beyond your competence. The form asks about each one." },
       { p: "Add evidence such as qualifications, professional memberships, insurance certificates and comparable projects: PDF, photos, Word or Excel, up to 20 MB each." },
-      { p: "Your statement belongs to you, not the project. Once submitted it's locked and fingerprinted. On your next project you can reuse it as it is, or update it, which creates a new version. Earlier versions are kept." },
+      { p: "Your statement belongs to you, not the project. Once submitted it's locked and fingerprinted. On your next project you can reuse it as it is, or update it, which creates a new version. Earlier versions are kept. You can also keep it up to date any time from My details, as your competence passport." },
     ],
   },
   {
@@ -244,6 +258,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     id: "project-clock",
     title: "The project clock",
     category: "Running a project",
+    feature: "demo",
     summary: "All reminder timing uses the project's own clock, which demo projects fast-forward.",
     body: [
       { p: "For real projects the project clock is simply today's date. Demo projects run on their own clock, which moves forward a day at a time when you press Advance, so you can watch weeks of chasing in a minute." },
@@ -253,6 +268,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     id: "demo",
     title: "Demo mode",
     category: "Running a project",
+    feature: "demo",
     summary: "A fictional project that fast-forwards time to show chasing in action.",
     body: [
       { p: "Try a demo creates a fictional project with six people, each with a personality (one only replies after a second reminder, another is asked for more information once). Use Advance 1 day, Advance to next event or Play to fast-forward." },
@@ -390,6 +406,10 @@ export const HELP_TERMS: Record<string, HelpTerm> = {
     definition: "The date reminders are timed from. For demo projects it moves forward when you advance the demo." },
   outbox: { label: "Outbox", topic: "demo",
     definition: "Where demo emails appear instead of being sent." },
+  "competence-passport": { label: "Competence passport", topic: "partners",
+    definition: "Your competence statement and evidence, saved once on My details and reused on every project. Updating it creates a new version." },
+  partner: { label: "Partner", topic: "partners",
+    definition: "A project owner who invites you. You can work with several, all from one sign-in." },
   "report-change": { label: "Report a change", topic: "report-change",
     definition: "Telling the team you no longer meet the competence requirements for your work (reg 11I)." },
 };

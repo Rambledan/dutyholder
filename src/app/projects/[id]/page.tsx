@@ -40,7 +40,7 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
     supabase.from("projects").select("*").eq("id", id).maybeSingle(),
     supabase
       .from("project_members")
-      .select("id, user_id, email, display_name, role, discipline, is_firm, is_owner, created_at, invited_at")
+      .select("id, user_id, email, display_name, role, discipline, is_firm, is_owner, created_at, invited_at, declined_at")
       .eq("project_id", id)
       .is("removed_at", null)
       .order("created_at"),
@@ -165,10 +165,16 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
                     <TableCell>
                       {m.user_id ? (
                         "Joined"
-                      ) : isOwner ? (
-                        <InviteButton invitedAt={m.invited_at} invite={inviteMember.bind(null, id, m.id)} />
                       ) : (
-                        <span className="text-muted-foreground">{m.invited_at ? "Invited" : "Not invited yet"}</span>
+                        <div className="space-y-1">
+                          {m.declined_at && <span className="block text-xs font-medium text-destructive">Declined</span>}
+                          {!m.declined_at && m.invited_at && <span className="block text-xs text-muted-foreground">Invited, not accepted yet</span>}
+                          {isOwner ? (
+                            <InviteButton invitedAt={m.invited_at} invite={inviteMember.bind(null, id, m.id)} />
+                          ) : !m.invited_at && !m.declined_at ? (
+                            <span className="text-muted-foreground">Not invited yet</span>
+                          ) : null}
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>

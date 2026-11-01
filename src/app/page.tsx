@@ -6,9 +6,11 @@ import { RegenerateRecoveryCodes } from "@/components/home/regenerate-recovery-c
 import { requireAal2 } from "@/lib/auth/server";
 import { roleLabel } from "@/lib/labels";
 import { signOut } from "./actions";
+import { Invitations, type Invitation } from "@/components/account/invitations";
 import { createDemo } from "./projects/demo-actions";
 import { Term } from "@/components/help/term";
 import { HelpLink } from "@/components/help/help-link";
+import { DEMO_ENABLED } from "@/lib/features";
 
 export default function HomePage() {
   return (
@@ -24,12 +26,15 @@ async function Home() {
   const { supabase, userId, email } = await requireAal2();
 
   // These reads go through RLS: they only succeed because the session is aal2.
-  const [{ data: profile }, { data: remaining }, { data: projects }, { data: myRoles }] = await Promise.all([
+  const [{ data: profile }, { data: remaining }, { data: projects }, { data: myRoles }, { data: invitations }] = await Promise.all([
     supabase.from("profiles").select("full_name, company").eq("id", userId).maybeSingle(),
     supabase.rpc("recovery_codes_remaining"),
-    supabase.from("projects").select("id, name, address").order("created_at", { ascending: false }),
+    supabase.from("projects").select("id, name, address, is_demo").order("created_at", { ascending: false }),
     supabase.from("project_members").select("id, project_id, role, is_owner").eq("user_id", userId).is("removed_at", null),
+    supabase.rpc("my_invitations"),
   ]);
+  // Demo projects are hidden while the demo is switched off.
+  const visibleProjects = (projects ?? []).filter((p) => DEMO_ENABLED || !p.is_demo);
   const { data: myItems } = myRoles?.length
     ? await supabase.from("checklist_items").select("project_id, status")
         .in("member_id", myRoles.map((r) => r.id)).is("withdrawn_at", null)
@@ -43,12 +48,23 @@ async function Home() {
           <p className="text-sm text-muted-foreground">{email}</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/account" className="text-sm text-muted-foreground hover:underline">My details</Link>
           <Link href="/help" className="text-sm text-muted-foreground hover:underline">Help</Link>
           <form action={signOut}>
             <Button type="submit" variant="outline">Sign out</Button>
           </form>
         </div>
       </header>
+
+      {(invitations ?? []).length > 0 && (
+        <Card className="border-amber-300 dark:border-amber-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-1.5">Invitations <HelpLink topic="partners" /></CardTitle>
+            <CardDescription>Nothing about you is shared with a partner until you accept.</CardDescription>
+          </CardHeader>
+          <CardContent><Invitations invitations={(invitations ?? []) as Invitation[]} /></CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4">
@@ -57,16 +73,18 @@ async function Home() {
             <CardDescription>Projects you own or have a role on.</CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            <form action={createDemo}>
-              <Button type="submit" variant="outline">Try a demo</Button>
-            </form>
+            {DEMO_ENABLED && (
+              <form action={createDemo}>
+                <Button type="submit" variant="outline">Try a demo</Button>
+              </form>
+            )}
             <Link href="/projects/new" className={buttonVariants()}>New project</Link>
           </div>
         </CardHeader>
         <CardContent>
-          {projects?.length ? (
+          {visibleProjects.length ? (
             <ul className="divide-y">
-              {projects.map((p) => {
+              {visibleProjects.map((p) => {
                 const roles = (myRoles ?? []).filter((r) => r.project_id === p.id);
                 const items = (myItems ?? []).filter((i) => i.project_id === p.id);
                 const done = items.filter((i) => i.status === "complete" || i.status === "submitted").length;

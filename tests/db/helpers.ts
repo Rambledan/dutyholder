@@ -147,10 +147,19 @@ export async function addMember(
   email: string,
   role: Role,
   isFirm = false,
+  accept = true,
 ): Promise<string> {
   const { rows } = await as(db, { id: ownerId, aal: "aal2" }, () =>
     db.query("select public.add_project_member($1, $2, '', $3, null, $4) as id", [projectId, email, role, isFirm]),
   );
+  // People who already have an account must accept before they join, as
+  // they would in the app. Accept on their behalf unless told not to.
+  if (accept) {
+    const { rows: [user] } = await db.query("select id from auth.users where lower(email) = lower($1)", [email]);
+    if (user) {
+      await as(db, { id: user.id, aal: "aal2" }, () => db.query("select public.accept_invitation($1)", [rows[0].id]));
+    }
+  }
   return rows[0].id;
 }
 

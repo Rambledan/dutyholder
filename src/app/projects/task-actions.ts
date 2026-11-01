@@ -20,9 +20,12 @@ async function nextPath(projectId: string, itemId: string): Promise<string> {
   return next ? `/projects/${projectId}/tasks/${next.id}` : `/projects/${projectId}/tasks`;
 }
 
+// Refresh the project's pages (if any) and the person's own account page,
+// which shows their competence passport.
 function refresh(projectId: string) {
-  revalidatePath(`/projects/${projectId}`, "layout");
+  if (projectId) revalidatePath(`/projects/${projectId}`, "layout");
   revalidatePath("/");
+  revalidatePath("/account", "layout");
 }
 
 export async function signAcknowledgement(projectId: string, itemId: string, typedName: string): Promise<DoneResult> {

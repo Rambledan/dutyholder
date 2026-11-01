@@ -174,17 +174,18 @@ describe("inside a project", () => {
       );
     }));
 
-  it("links a pending member when they sign up later", () =>
+  it("joins the project whose invite link was used, and leaves other owners' places as invitations", () =>
     inTransaction(async (db) => {
       const a = await signUpUser(db, "a");
-      const projectId = await createProject(db, a.id);
+      const b = await signUpUser(db, "b");
+      const projectA = await createProject(db, a.id);
+      const projectB = await createProject(db, b.id);
       const laterEmail = testEmail("later");
-      await addMember(db, a.id, projectId, laterEmail, "designer");
+      const memberA = await addMember(db, a.id, projectA, laterEmail, "designer");
+      const memberB = await addMember(db, b.id, projectB, laterEmail, "contractor");
 
-      const pending = await db.query("select user_id from public.project_members where email = $1", [laterEmail]);
-      expect(pending.rows[0].user_id).toBeNull();
-
-      const { rows: [{ token }] } = await db.query("select public.create_invite($1) as token", [laterEmail]);
+      const { rows: [{ token }] } = await as(db, { id: a.id, aal: "aal2" }, () =>
+        db.query("select token from public.invite_project_member($1)", [memberA]));
       const { rows: [{ id }] } = await db.query(
         `insert into auth.users (id, instance_id, aud, role, email, encrypted_password, raw_user_meta_data,
            raw_app_meta_data, email_confirmed_at, created_at, updated_at)
@@ -192,7 +193,11 @@ describe("inside a project", () => {
            $1, '', $2, '{}', now(), now(), now()) returning id`,
         [laterEmail, JSON.stringify({ invite_token: token })],
       );
-      const linked = await db.query("select user_id from public.project_members where email = $1", [laterEmail]);
-      expect(linked.rows[0].user_id).toBe(id);
+      const linked = await db.query("select id, user_id from public.project_members where id = any($1)", [[memberA, memberB]]);
+      expect(linked.rows.find((r) => r.id === memberA).user_id).toBe(id);
+      expect(linked.rows.find((r) => r.id === memberB).user_id).toBeNull();
+
+      const { rows: invitations } = await as(db, { id, aal: "aal2" }, () => db.query("select * from public.my_invitations()"));
+      expect(invitations.map((r) => r.project_id)).toEqual([projectB]);
     }));
 });

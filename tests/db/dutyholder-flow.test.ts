@@ -320,7 +320,7 @@ describe("invites from the project page", () => {
       expect(await check(second.token)).toBe("new-person@example.test");
     }));
 
-  it("refuses non-owners and people who already have an account", () =>
+  it("refuses non-owners and people who have already joined", () =>
     inTransaction(async (db) => {
       const { owner, client, projectId } = await team(db);
       const pending = await addMember(db, owner.id, projectId, "pending@example.test", "contractor");
@@ -330,6 +330,6 @@ describe("invites from the project page", () => {
       const { rows: [{ id: joined }] } = await db.query(
         "select id from public.project_members where project_id = $1 and email = $2", [projectId, client.email]);
       expect(await expectError(as(db, aal2(owner.id), () =>
-        db.query("select * from public.invite_project_member($1)", [joined])))).toMatch(/already has an account/);
+        db.query("select * from public.invite_project_member($1)", [joined])))).toMatch(/already joined/);
     }));
 });

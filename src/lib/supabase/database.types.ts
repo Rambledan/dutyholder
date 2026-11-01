@@ -608,6 +608,7 @@ export type Database = {
           email: string
           expires_at: string
           id: string
+          member_id: string | null
           token_hash: string
           used_at: string | null
           used_by: string | null
@@ -618,6 +619,7 @@ export type Database = {
           email: string
           expires_at?: string
           id?: string
+          member_id?: string | null
           token_hash: string
           used_at?: string | null
           used_by?: string | null
@@ -628,11 +630,20 @@ export type Database = {
           email?: string
           expires_at?: string
           id?: string
+          member_id?: string | null
           token_hash?: string
           used_at?: string | null
           used_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "invites_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mfa_recovery_codes: {
         Row: {
@@ -664,6 +675,8 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          job_title: string
+          memberships: string
           phone: string | null
           updated_at: string
         }
@@ -672,6 +685,8 @@ export type Database = {
           created_at?: string
           full_name?: string
           id: string
+          job_title?: string
+          memberships?: string
           phone?: string | null
           updated_at?: string
         }
@@ -680,6 +695,8 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          job_title?: string
+          memberships?: string
           phone?: string | null
           updated_at?: string
         }
@@ -687,9 +704,11 @@ export type Database = {
       }
       project_members: {
         Row: {
+          accepted_at: string | null
           added_by: string | null
           chasing_paused: boolean
           created_at: string
+          declined_at: string | null
           demo_persona: string | null
           discipline: string | null
           display_name: string
@@ -704,9 +723,11 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          accepted_at?: string | null
           added_by?: string | null
           chasing_paused?: boolean
           created_at?: string
+          declined_at?: string | null
           demo_persona?: string | null
           discipline?: string | null
           display_name?: string
@@ -721,9 +742,11 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          accepted_at?: string | null
           added_by?: string | null
           chasing_paused?: boolean
           created_at?: string
+          declined_at?: string | null
           demo_persona?: string | null
           discipline?: string | null
           display_name?: string
@@ -1037,6 +1060,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: { Args: { p_member_id: string }; Returns: string }
       add_project_member: {
         Args: {
           p_discipline: string
@@ -1137,6 +1161,7 @@ export type Database = {
         }
         Returns: string
       }
+      decline_invitation: { Args: { p_member_id: string }; Returns: undefined }
       demo_step: {
         Args: {
           p_changes: Json
@@ -1175,6 +1200,8 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: {
           email: string
+          existing_account: boolean
+          owner_company: string
           owner_name: string
           project_id: string
           project_name: string
@@ -1185,6 +1212,31 @@ export type Database = {
       is_project_member: { Args: { p_project_id: string }; Returns: boolean }
       is_project_owner: { Args: { p_project_id: string }; Returns: boolean }
       is_project_reviewer: { Args: { p_project_id: string }; Returns: boolean }
+      my_invitations: {
+        Args: never
+        Returns: {
+          invited_at: string
+          member_id: string
+          owner_company: string
+          owner_name: string
+          project_address: string
+          project_id: string
+          project_name: string
+          role: Database["public"]["Enums"]["dutyholder_role"]
+        }[]
+      }
+      my_partners: {
+        Args: never
+        Returns: {
+          accepted_at: string
+          my_roles: string[]
+          owner_company: string
+          owner_email: string
+          owner_name: string
+          project_id: string
+          project_name: string
+        }[]
+      }
       normalise_name: { Args: { p_name: string }; Returns: string }
       normalise_recovery_code: { Args: { p_code: string }; Returns: string }
       owns_project_using_statement: {
@@ -1274,6 +1326,7 @@ export type Database = {
       }
       start_competence_draft: { Args: never; Returns: string }
       submit_competence: { Args: { p_item_id: string }; Returns: string }
+      submit_competence_passport: { Args: never; Returns: string }
       use_recovery_code: { Args: { p_code: string }; Returns: boolean }
       void_appointment: {
         Args: { p_appointment_id: string; p_reason: string }

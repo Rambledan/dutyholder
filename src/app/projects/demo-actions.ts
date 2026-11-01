@@ -7,10 +7,12 @@ import { appUrl } from "@/lib/app-url";
 import { requireAal2 } from "@/lib/auth/server";
 import { loadDemoSnapshot } from "@/lib/demo/load";
 import { planDemoDay } from "@/lib/demo/simulate";
+import { DEMO_ENABLED } from "@/lib/features";
 
 export type DemoResult = { error: string | null; day?: number; date?: string; allGreen?: boolean; events?: string[] };
 
 export async function createDemo(): Promise<void> {
+  if (!DEMO_ENABLED) throw new Error("Demo mode is switched off.");
   const { supabase } = await requireAal2();
   const { data: projectId, error } = await supabase.rpc("create_demo_project");
   if (error || !projectId) throw new Error(error?.message ?? "Couldn't create the demo.");
@@ -18,6 +20,7 @@ export async function createDemo(): Promise<void> {
 }
 
 async function stepOnce(projectId: string): Promise<DemoResult> {
+  if (!DEMO_ENABLED) return { error: "Demo mode is switched off." };
   const { supabase } = await requireAal2();
   const snap = await loadDemoSnapshot(supabase, projectId);
   if (!snap) return { error: "This isn't a demo project." };

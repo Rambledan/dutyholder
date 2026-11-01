@@ -15,6 +15,7 @@ import { STATUS_LABELS, rag, roleLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { Term } from "@/components/help/term";
 import { HelpLink } from "@/components/help/help-link";
+import { DEMO_ENABLED } from "@/lib/features";
 
 export const metadata = { title: "Dashboard · Dutyholder" };
 
@@ -110,7 +111,7 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
         </div>
       </header>
 
-      {project.is_demo && (
+      {DEMO_ENABLED && project.is_demo && (
         <Card className="border-amber-300 dark:border-amber-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-1.5">Demo controls <HelpLink topic="demo" /></CardTitle>
@@ -225,7 +226,7 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
         </CardContent>
       </Card>
 
-      {project.is_demo && (
+      {DEMO_ENABLED && project.is_demo && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-1.5">Outbox <HelpLink topic="demo" /></CardTitle>

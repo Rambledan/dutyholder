@@ -91,6 +91,23 @@ the full plan and `CLAUDE.md` for the working rules.
 - The export job (`src/lib/evidence/job.ts`) is the only other user of the
   secret key, as PLAN.md allows
 
+## One sign-in, many partners
+
+- **My details** (`/account`): profile (name, company, job title, phone,
+  professional memberships) saved once and used on every project; the
+  competence passport (`/account/competence`) to keep your statement current
+  outside any project; and "Who you work with", grouped by partner
+- Joining a project is the person's choice: an owner adding someone who
+  already has an account creates an invitation (home page and My details)
+  to accept or decline. Nothing is shared, and no reminders sent, until
+  they accept. Signing up through an invite link joins that project only
+- Owners see Invited / Joined / Declined on the team list
+
+## Feature switches
+
+`src/lib/features.ts` turns whole features off without deleting them.
+`DEMO_ENABLED` is currently `false`: the demo (phase 6) is hidden.
+
 ## Help system
 
 - `/help`: every help topic with search and a glossary, open to everyone

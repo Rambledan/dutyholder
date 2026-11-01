@@ -6,7 +6,8 @@ import { requireAal2 } from "@/lib/auth/server";
 import { appUrl } from "@/lib/app-url";
 import { emailConfigured, sendEmail } from "@/lib/email";
 import { inviteEmail } from "@/lib/invite-email";
-import { ROLES, type DutyholderRole } from "@/lib/labels";
+import { ROLES, roleLabel, type DutyholderRole } from "@/lib/labels";
+import { notifyMember } from "@/lib/notify";
 
 export type FormState = { error: string | null };
 
@@ -108,8 +109,8 @@ export async function addMember(projectId: string, _prev: FormState, formData: F
 }
 
 export type InviteResult =
-  | { ok: true; sent: true; email: string }
-  | { ok: true; sent: false; email: string; link: string; reason: string }
+  | { ok: true; sent: true; email: string; existingAccount: boolean }
+  | { ok: true; sent: false; email: string; link: string | null; reason: string; existingAccount: boolean }
   | { ok: false; error: string };
 
 // Creates a fresh single-use invite and emails it. If email isn't set up
@@ -123,13 +124,37 @@ export async function inviteMember(projectId: string, memberId: string): Promise
   ]);
   if (error || !invite) return { ok: false, error: error?.message ?? "Couldn't create the invite." };
 
+  revalidatePath(`/projects/${projectId}`);
+
+  // Someone who already has an account doesn't sign up again: they see the
+  // invitation when they sign in, and accept or decline it.
+  if (invite.existing_account) {
+    const owner = invite.owner_company ? `${invite.owner_name} (${invite.owner_company})` : invite.owner_name;
+    const result = await notifyMember(supabase, {
+      projectId,
+      memberId,
+      to: invite.email,
+      kind: "invitation",
+      subject: `${owner} has invited you to ${invite.project_name}`,
+      lines: [
+        `${owner} has invited you to join ${invite.project_name} on Dutyholder as the ${roleLabel(member?.role ?? null).toLowerCase()}.`,
+        "You already have a Dutyholder account, so just sign in to accept or decline. Your saved details and competence statement can be reused.",
+      ],
+      path: "/account#invitations",
+      button: "View the invitation",
+      fromName: owner,
+    });
+    return result.sent
+      ? { ok: true, sent: true, email: invite.email, existingAccount: true }
+      : { ok: true, sent: false, email: invite.email, link: null, existingAccount: true,
+          reason: "They already have an account: the invitation is waiting for them when they sign in." };
+  }
+
   const next = `/projects/${projectId}/tasks`;
   const link = `${await appUrl()}/signup?token=${invite.token}&next=${encodeURIComponent(next)}`;
 
-  revalidatePath(`/projects/${projectId}`);
-
   if (!emailConfigured()) {
-    return { ok: true, sent: false, email: invite.email, link, reason: "Email sending isn't set up yet." };
+    return { ok: true, sent: false, email: invite.email, link, reason: "Email sending isn't set up yet.", existingAccount: false };
   }
 
   const message = inviteEmail({
@@ -145,6 +170,6 @@ export async function inviteMember(projectId: string, memberId: string): Promise
     p_detail: result.sent ? result.id : result.reason,
   });
 
-  if (result.sent) return { ok: true, sent: true, email: invite.email };
-  return { ok: true, sent: false, email: invite.email, link, reason: `The email couldn't be sent (${result.reason}).` };
+  if (result.sent) return { ok: true, sent: true, email: invite.email, existingAccount: false };
+  return { ok: true, sent: false, email: invite.email, link, reason: `The email couldn't be sent (${result.reason}).`, existingAccount: false };
 }

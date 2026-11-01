@@ -10,6 +10,7 @@ import { YesNo } from "@/components/projects/yes-no";
 import {
   saveCompetence, startCompetenceRevision, submitCompetence, type CompetenceFields,
 } from "@/app/projects/task-actions";
+import { submitCompetencePassport } from "@/app/account/actions";
 import { FileList, type FileRow } from "./file-list";
 import { FileUploader } from "./file-uploader";
 import { SaveStatus, useAutosave } from "./use-autosave";
@@ -61,7 +62,11 @@ export function CompetenceForm(props: {
   nextHref: string;
   // After "needs more info", the old version can't be reused as it is.
   mustRevise?: boolean;
+  // "passport": edited from My details, outside any project. Saving creates
+  // a new version to reuse on projects, instead of submitting to one.
+  mode?: "project" | "passport";
 }) {
+  const passport = props.mode === "passport";
   const router = useRouter();
   const [fields, setFields] = useState<CompetenceFields>(props.draft ?? EMPTY_FIELDS);
   const [files, setFiles] = useState<FileRow[]>(props.draft?.files ?? []);
@@ -99,11 +104,12 @@ export function CompetenceForm(props: {
           You submitted a competence statement (version {s.version}
           {s.submittedAt && `, ${new Date(s.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`}
           ) with {s.files.length} evidence file{s.files.length === 1 ? "" : "s"}.{" "}
-          {props.mustRevise ? "Update it to answer the request above." : "You can use it for this project as it is, or update it first."}
+          {passport ? "Update it whenever something changes: projects you join can reuse the latest version."
+            : props.mustRevise ? "Update it to answer the request above." : "You can use it for this project as it is, or update it first."}
         </p>
         <StatementView statement={s} isFirm={props.isFirm} projectId={props.projectId} />
         <div className="flex flex-col gap-2 sm:flex-row">
-          {!props.mustRevise && (
+          {!props.mustRevise && !passport && (
             <Button size="lg" disabled={busy}
               onClick={() => run(() => submitCompetence(props.projectId, props.itemId), (next) => router.push(next ?? props.nextHref))}>
               Use it for this project
@@ -187,18 +193,26 @@ export function CompetenceForm(props: {
           onClick={() =>
             run(async () => {
               const saved = await saveCompetence(fields);
-              return saved.error ? saved : submitCompetence(props.projectId, props.itemId);
+              if (saved.error) return saved;
+              return passport ? submitCompetencePassport() : submitCompetence(props.projectId, props.itemId);
             }, (next) => {
               setSubmitted(true);
               router.push(next ?? props.nextHref);
             })
           }>
-          {busy ? "Submitting…" : "Submit for review"}
+          {busy ? "Saving…" : passport ? "Save as a new version" : "Submit for review"}
         </Button>
-        <p className="text-xs text-muted-foreground">
-          Once submitted, this version is locked and <Term id="sha256">fingerprinted</Term>. Whoever appointed you will{" "}
-          <Term id="review">review it</Term>.
-        </p>
+        {passport ? (
+          <p className="text-xs text-muted-foreground">
+            Each saved version is locked and <Term id="sha256">fingerprinted</Term>. Projects you&apos;ve already submitted to keep
+            the version they were given.
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Once submitted, this version is locked and <Term id="sha256">fingerprinted</Term>. Whoever appointed you will{" "}
+            <Term id="review">review it</Term>.
+          </p>
+        )}
       </div>
     </div>
   );
