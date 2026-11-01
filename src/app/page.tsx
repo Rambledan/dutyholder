@@ -1,8 +1,10 @@
 import { Suspense } from "react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RegenerateRecoveryCodes } from "@/components/home/regenerate-recovery-codes";
 import { requireAal2 } from "@/lib/auth/server";
+import { roleLabel } from "@/lib/labels";
 import { signOut } from "./actions";
 
 export default function HomePage() {
@@ -19,9 +21,11 @@ async function Home() {
   const { supabase, userId, email } = await requireAal2();
 
   // These reads go through RLS: they only succeed because the session is aal2.
-  const [{ data: profile }, { data: remaining }] = await Promise.all([
+  const [{ data: profile }, { data: remaining }, { data: projects }, { data: myRoles }] = await Promise.all([
     supabase.from("profiles").select("full_name, company").eq("id", userId).maybeSingle(),
     supabase.rpc("recovery_codes_remaining"),
+    supabase.from("projects").select("id, name, address").order("created_at", { ascending: false }),
+    supabase.from("project_members").select("project_id, role, is_owner").eq("user_id", userId).is("removed_at", null),
   ]);
 
   return (
@@ -37,11 +41,38 @@ async function Home() {
       </header>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Your projects</CardTitle>
-          <CardDescription>Projects and your checklist of duties will appear here (phase 2).</CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div className="space-y-1.5">
+            <CardTitle>Your projects</CardTitle>
+            <CardDescription>Projects you own or have a role on.</CardDescription>
+          </div>
+          <Link href="/projects/new" className={buttonVariants()}>New project</Link>
         </CardHeader>
-        <CardContent />
+        <CardContent>
+          {projects?.length ? (
+            <ul className="divide-y">
+              {projects.map((p) => {
+                const roles = (myRoles ?? []).filter((r) => r.project_id === p.id);
+                return (
+                  <li key={p.id}>
+                    <Link href={`/projects/${p.id}`} className="flex flex-wrap items-center justify-between gap-2 py-3 hover:underline">
+                      <span>
+                        <span className="font-medium">{p.name}</span>
+                        {p.address && <span className="block text-xs text-muted-foreground">{p.address}</span>}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {roles.map((r) => (r.role ? roleLabel(r.role) : "Owner")).join(", ")}
+                        {roles.some((r) => r.is_owner) && roles.some((r) => r.role) ? " · Owner" : ""}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No projects yet. Create one to get started.</p>
+          )}
+        </CardContent>
       </Card>
 
       <Card>

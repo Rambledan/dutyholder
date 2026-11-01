@@ -112,3 +112,58 @@ export async function addVerifiedTotpFactor(db: PoolClient, userId: string): Pro
   );
   return id;
 }
+
+export type Role = "client" | "principal_designer" | "designer" | "principal_contractor" | "contractor";
+
+export type ProjectOptions = {
+  isDomesticClient?: boolean;
+  domesticDutiesToPd?: boolean;
+  expectedContractors?: number;
+  cdmPdCertified?: boolean;
+  ownerRole?: Role;
+};
+
+// Create a project as `ownerId` (aal2), the way the "New project" form does.
+export async function createProject(db: PoolClient, ownerId: string, opts: ProjectOptions = {}): Promise<string> {
+  const { rows } = await as(db, { id: ownerId, aal: "aal2" }, () =>
+    db.query(
+      "select public.create_project('Test project', '1 High St', 'Two-storey extension', $1, $2, false, $3, $4, $5) as id",
+      [
+        opts.isDomesticClient ?? false,
+        opts.domesticDutiesToPd ?? false,
+        opts.expectedContractors ?? 3,
+        opts.cdmPdCertified ?? false,
+        opts.ownerRole ?? "principal_designer",
+      ],
+    ),
+  );
+  return rows[0].id;
+}
+
+export async function addMember(
+  db: PoolClient,
+  ownerId: string,
+  projectId: string,
+  email: string,
+  role: Role,
+  isFirm = false,
+): Promise<string> {
+  const { rows } = await as(db, { id: ownerId, aal: "aal2" }, () =>
+    db.query("select public.add_project_member($1, $2, '', $3, null, $4) as id", [projectId, email, role, isFirm]),
+  );
+  return rows[0].id;
+}
+
+// Active checklist codes for each member email, read as the database owner.
+export async function activeCodesByEmail(db: PoolClient, projectId: string): Promise<Record<string, string[]>> {
+  const { rows } = await db.query(
+    `select m.email, i.template_code
+     from public.checklist_items i join public.project_members m on m.id = i.member_id
+     where i.project_id = $1 and i.withdrawn_at is null
+     order by i.template_code`,
+    [projectId],
+  );
+  const out: Record<string, string[]> = {};
+  for (const r of rows) (out[r.email] ??= []).push(r.template_code);
+  return out;
+}

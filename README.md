@@ -14,6 +14,17 @@ the full plan and `CLAUDE.md` for the working rules.
 - `profiles` table with RLS: you can only see your own row, only after 2FA
 - Append-only `audit_log` recording sign-ups and 2FA events
 
+## Phase 2: what's built
+
+- Projects with set-up questions (domestic client, number of contractors,
+  CDM certification; higher-risk work refused in v1)
+- Team members added by email with their statutory role
+- `duty_templates`: the Part 2A duties from `PLAN.md`, versioned, never edited
+- `generate_checklist()`: re-runs automatically when a member or set-up
+  answer changes; withdraws (never deletes) items that stop applying
+- RLS: members see the project and team; you see your own items, the owner
+  sees everyone's; owners can read their project's audit trail
+
 ## First-time setup (dev project)
 
 1. **Supabase dashboard → your `dutyholder-dev` project:**
@@ -58,3 +69,4 @@ Copy the link it returns and open it. Each link works once, for that email only.
 | `npm run typecheck` | Check the TypeScript for mistakes |
 | `npm run lint` | Check code style |
 | `npx supabase db push` | Apply new migration files to the linked database |
+| `npm run db:types` | Regenerate TypeScript types after a database change |
