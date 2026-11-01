@@ -12,6 +12,7 @@ export type SendResult = { sent: true; id: string } | { sent: false; reason: str
 
 export async function sendEmail(message: {
   to: string;
+  cc?: string[];
   subject: string;
   html: string;
   text: string;
@@ -29,6 +30,7 @@ export async function sendEmail(message: {
       body: JSON.stringify({
         from: process.env.EMAIL_FROM,
         to: [message.to],
+        ...(message.cc?.length ? { cc: message.cc } : {}),
         subject: message.subject,
         html: message.html,
         text: message.text,

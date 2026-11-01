@@ -21,6 +21,9 @@ function readSetup(formData: FormData) {
     isHigherRisk: formData.get("is_higher_risk") === "yes",
     expectedContractors: formData.get("contractors") === "one" ? 1 : 2,
     cdmPdCertified: formData.get("cdm_pd_certified") === "on",
+    constructionStartDate: /^\d{4}-\d{2}-\d{2}$/.test(String(formData.get("construction_start_date") ?? ""))
+      ? String(formData.get("construction_start_date"))
+      : null,
   };
 }
 
@@ -49,6 +52,9 @@ export async function createProject(_prev: FormState, formData: FormData): Promi
     p_owner_role: ownerRole,
   });
   if (error || !projectId) return { error: error?.message ?? "Couldn't create the project." };
+  if (s.constructionStartDate) {
+    await supabase.from("projects").update({ construction_start_date: s.constructionStartDate }).eq("id", projectId);
+  }
 
   redirect(`/projects/${projectId}`);
 }
@@ -71,6 +77,7 @@ export async function updateProject(projectId: string, _prev: FormState, formDat
       domestic_duties_to_pd: s.domesticToPd,
       expected_contractors: s.expectedContractors,
       cdm_pd_certified: s.cdmPdCertified,
+      construction_start_date: s.constructionStartDate,
     })
     .eq("id", projectId)
     .select("id");

@@ -46,6 +46,7 @@ async function EditProject({ params }: { params: PageProps<"/projects/[id]/edit"
             domesticDutiesToPd: project.domestic_duties_to_pd,
             expectedContractors: project.expected_contractors,
             cdmPdCertified: project.cdm_pd_certified,
+            constructionStartDate: project.construction_start_date ?? "",
           }}
         />
       </CardContent>

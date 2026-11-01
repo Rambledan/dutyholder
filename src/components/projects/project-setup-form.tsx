@@ -20,6 +20,7 @@ export type SetupValues = {
   domesticDutiesToPd: boolean;
   expectedContractors: number;
   cdmPdCertified: boolean;
+  constructionStartDate: string;
 };
 
 const EMPTY: SetupValues = {
@@ -30,6 +31,7 @@ const EMPTY: SetupValues = {
   domesticDutiesToPd: false,
   expectedContractors: 2,
   cdmPdCertified: false,
+  constructionStartDate: "",
 };
 
 // The project set-up questions, used both to create and to edit a project.
@@ -63,6 +65,13 @@ export function ProjectSetupForm(props: {
         <Textarea id="description" name="description" rows={4} defaultValue={initial.description}
           placeholder="Building type, use, storeys, height, new build or alteration, number of homes…" />
         <p className="text-xs text-muted-foreground">Phase 8 will use this to suggest which regulations apply.</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="construction_start_date">Expected construction start date (optional)</Label>
+        <Input id="construction_start_date" name="construction_start_date" type="date" className="w-auto"
+          defaultValue={initial.constructionStartDate} />
+        <p className="text-xs text-muted-foreground">Mentioned in reminders, so people know the deadline.</p>
       </div>
 
       <p className="rounded-lg border bg-muted/40 p-3 text-sm">

@@ -62,7 +62,7 @@ async function Home() {
                 const isOwner = roles.some((r) => r.is_owner);
                 return (
                   <li key={p.id}>
-                    <Link href={isOwner ? `/projects/${p.id}` : `/projects/${p.id}/tasks`}
+                    <Link href={isOwner ? `/projects/${p.id}/dashboard` : `/projects/${p.id}/tasks`}
                       className="flex flex-wrap items-center justify-between gap-2 py-3 hover:underline">
                       <span>
                         <span className="font-medium">{p.name}</span>

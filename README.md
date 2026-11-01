@@ -51,6 +51,19 @@ the full plan and `CLAUDE.md` for the working rules.
   review and notifies the owner
 - Notification emails (when Resend is set up), each logged in the audit trail
 
+## Phase 5: what's built
+
+- Chasing engine (`src/lib/chase`): day 3 nudge, day 7 reminder (naming the
+  start date), day 14 firm reminder copying the owner, then weekly; owner's
+  weekly "behind" digest from day 10. Weekdays 8am–6pm UK only, one email per
+  person per day, never to paused people, signed on the owner's behalf
+- Every reminder is recorded before sending; a step can never repeat
+- All chasing time goes through `projectNow(project)` (`src/lib/clock.ts`)
+- `/api/cron/chase`, called by Vercel Cron at 09:00 UTC on weekdays
+  (`vercel.json`), protected by `CRON_SECRET`; the only user of the secret key
+- Owner dashboard: people × duties grid, last chased, next reminder, Pause
+  and Chase now
+
 ## First-time setup (dev project)
 
 1. **Supabase dashboard → your `dutyholder-dev` project:**

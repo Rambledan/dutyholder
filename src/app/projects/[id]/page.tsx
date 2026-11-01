@@ -91,6 +91,11 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
             </Link>
           )}
           {isOwner && (
+            <Link href={`/projects/${id}/dashboard`} className={buttonVariants({ variant: "outline" })}>
+              Dashboard
+            </Link>
+          )}
+          {isOwner && (
             <Link href={`/projects/${id}/edit`} className={buttonVariants({ variant: "outline" })}>
               Edit set-up
             </Link>
@@ -113,6 +118,10 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
             <Fact label="CDM principal designer certification" value={project.cdm_pd_certified ? "Yes" : "No"} />
             <Fact label="Higher-risk" value="No" />
             <Fact label="Records kept for" value={`${project.retention_years} years after the project`} />
+            <Fact label="Construction starts"
+              value={project.construction_start_date
+                ? new Date(project.construction_start_date).toLocaleDateString("en-GB", { dateStyle: "long" })
+                : "Not set"} />
           </dl>
           {project.description && <p className="mt-4 whitespace-pre-line text-sm">{project.description}</p>}
         </CardContent>

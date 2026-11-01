@@ -689,6 +689,8 @@ export type Database = {
         Row: {
           address: string
           cdm_pd_certified: boolean
+          clock_offset_days: number
+          construction_start_date: string | null
           created_at: string
           created_by: string | null
           description: string
@@ -706,6 +708,8 @@ export type Database = {
         Insert: {
           address?: string
           cdm_pd_certified?: boolean
+          clock_offset_days?: number
+          construction_start_date?: string | null
           created_at?: string
           created_by?: string | null
           description?: string
@@ -723,6 +727,8 @@ export type Database = {
         Update: {
           address?: string
           cdm_pd_certified?: boolean
+          clock_offset_days?: number
+          construction_start_date?: string | null
           created_at?: string
           created_by?: string | null
           description?: string
@@ -738,6 +744,72 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reminders: {
+        Row: {
+          cc_emails: string[]
+          created_at: string
+          detail: string | null
+          id: string
+          item_ids: string[]
+          kind: string
+          member_id: string
+          project_day: string
+          project_id: string
+          recipient_email: string
+          sent_at: string | null
+          simulated: boolean
+          status: string
+          step_key: string
+        }
+        Insert: {
+          cc_emails?: string[]
+          created_at?: string
+          detail?: string | null
+          id?: string
+          item_ids?: string[]
+          kind: string
+          member_id: string
+          project_day: string
+          project_id: string
+          recipient_email: string
+          sent_at?: string | null
+          simulated?: boolean
+          status?: string
+          step_key: string
+        }
+        Update: {
+          cc_emails?: string[]
+          created_at?: string
+          detail?: string | null
+          id?: string
+          item_ids?: string[]
+          kind?: string
+          member_id?: string
+          project_day?: string
+          project_id?: string
+          recipient_email?: string
+          sent_at?: string | null
+          simulated?: boolean
+          status?: string
+          step_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviews: {
         Row: {
@@ -933,6 +1005,7 @@ export type Database = {
       }
       can_read_document: { Args: { p_document_id: string }; Returns: boolean }
       can_read_storage_path: { Args: { p_path: string }; Returns: boolean }
+      chase_state: { Args: never; Returns: Json }
       check_invite: { Args: { p_token: string }; Returns: string }
       checklist_wanted: {
         Args: { p_project_id: string }
@@ -941,6 +1014,31 @@ export type Database = {
           template_code: string
           template_id: string
         }[]
+      }
+      claim_reminders: {
+        Args: { p_reminders: Json }
+        Returns: {
+          cc_emails: string[]
+          created_at: string
+          detail: string | null
+          id: string
+          item_ids: string[]
+          kind: string
+          member_id: string
+          project_day: string
+          project_id: string
+          recipient_email: string
+          sent_at: string | null
+          simulated: boolean
+          status: string
+          step_key: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "reminders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       complete_form_item: { Args: { p_item_id: string }; Returns: undefined }
       complete_upload_item: { Args: { p_item_id: string }; Returns: undefined }
@@ -958,6 +1056,14 @@ export type Database = {
           p_owner_role: Database["public"]["Enums"]["dutyholder_role"]
         }
         Returns: string
+      }
+      finish_manual_chase: {
+        Args: { p_detail: string; p_reminder_id: string; p_sent: boolean }
+        Returns: undefined
+      }
+      finish_reminders: {
+        Args: { p_detail: string; p_ids: string[]; p_status: string }
+        Returns: undefined
       }
       generate_checklist: { Args: { p_project_id: string }; Returns: undefined }
       generate_recovery_codes: { Args: never; Returns: string[] }
@@ -992,6 +1098,7 @@ export type Database = {
         }
         Returns: string
       }
+      project_now: { Args: { p_project_id: string }; Returns: string }
       record_email: {
         Args: {
           p_detail: string
@@ -1006,6 +1113,7 @@ export type Database = {
         Args: { p_detail: string; p_member_id: string; p_sent: boolean }
         Returns: undefined
       }
+      record_manual_chase: { Args: { p_member_id: string }; Returns: string }
       record_mfa_enrolled: { Args: never; Returns: undefined }
       recovery_codes_remaining: { Args: never; Returns: number }
       refresh_review_items: {
