@@ -1,11 +1,20 @@
-// The one place "now" comes from for anything to do with chasing. A real
-// project's clock is real time; a demo project (phase 6) is shifted forward
-// by clock_offset_days. Mirrors project_now() in the database.
+// The one place "now" comes from for anything to do with chasing. Mirrors
+// project_now() in the database.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export function projectNow(project: { clock_offset_days?: number | null }, base: Date = new Date()): Date {
-  return new Date(base.getTime() + (project.clock_offset_days ?? 0) * DAY_MS);
+export type ClockProject = {
+  clock_offset_days?: number | null;
+  is_demo?: boolean | null;
+  demo_started_at?: string | null;
+};
+
+// Real projects: real time plus the offset. Demo projects: an anchored clock
+// (10am on day 0, plus one calendar day per simulated day), so a demo plays
+// out the same way whatever time you run it.
+export function projectNow(project: ClockProject, base: Date = new Date()): Date {
+  const start = project.is_demo && project.demo_started_at ? new Date(project.demo_started_at) : base;
+  return new Date(start.getTime() + (project.clock_offset_days ?? 0) * DAY_MS);
 }
 
 // Calendar parts of a moment in UK time.

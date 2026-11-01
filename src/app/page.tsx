@@ -6,6 +6,7 @@ import { RegenerateRecoveryCodes } from "@/components/home/regenerate-recovery-c
 import { requireAal2 } from "@/lib/auth/server";
 import { roleLabel } from "@/lib/labels";
 import { signOut } from "./actions";
+import { createDemo } from "./projects/demo-actions";
 
 export default function HomePage() {
   return (
@@ -50,7 +51,12 @@ async function Home() {
             <CardTitle>Your projects</CardTitle>
             <CardDescription>Projects you own or have a role on.</CardDescription>
           </div>
-          <Link href="/projects/new" className={buttonVariants()}>New project</Link>
+          <div className="flex flex-wrap gap-2">
+            <form action={createDemo}>
+              <Button type="submit" variant="outline">Try a demo</Button>
+            </form>
+            <Link href="/projects/new" className={buttonVariants()}>New project</Link>
+          </div>
         </CardHeader>
         <CardContent>
           {projects?.length ? (

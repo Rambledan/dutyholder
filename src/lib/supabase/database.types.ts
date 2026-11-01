@@ -631,6 +631,7 @@ export type Database = {
           added_by: string | null
           chasing_paused: boolean
           created_at: string
+          demo_persona: string | null
           discipline: string | null
           display_name: string
           email: string
@@ -647,6 +648,7 @@ export type Database = {
           added_by?: string | null
           chasing_paused?: boolean
           created_at?: string
+          demo_persona?: string | null
           discipline?: string | null
           display_name?: string
           email: string
@@ -663,6 +665,7 @@ export type Database = {
           added_by?: string | null
           chasing_paused?: boolean
           created_at?: string
+          demo_persona?: string | null
           discipline?: string | null
           display_name?: string
           email?: string
@@ -693,10 +696,13 @@ export type Database = {
           construction_start_date: string | null
           created_at: string
           created_by: string | null
+          demo_started_at: string | null
+          demo_state: Json
           description: string
           domestic_duties_to_pd: boolean
           expected_contractors: number
           id: string
+          is_demo: boolean
           is_domestic_client: boolean
           is_higher_risk: boolean
           jurisdiction: Database["public"]["Enums"]["jurisdiction"]
@@ -712,10 +718,13 @@ export type Database = {
           construction_start_date?: string | null
           created_at?: string
           created_by?: string | null
+          demo_started_at?: string | null
+          demo_state?: Json
           description?: string
           domestic_duties_to_pd?: boolean
           expected_contractors?: number
           id?: string
+          is_demo?: boolean
           is_domestic_client?: boolean
           is_higher_risk?: boolean
           jurisdiction?: Database["public"]["Enums"]["jurisdiction"]
@@ -731,10 +740,13 @@ export type Database = {
           construction_start_date?: string | null
           created_at?: string
           created_by?: string | null
+          demo_started_at?: string | null
+          demo_state?: Json
           description?: string
           domestic_duties_to_pd?: boolean
           expected_contractors?: number
           id?: string
+          is_demo?: boolean
           is_domestic_client?: boolean
           is_higher_risk?: boolean
           jurisdiction?: Database["public"]["Enums"]["jurisdiction"]
@@ -747,6 +759,7 @@ export type Database = {
       }
       reminders: {
         Row: {
+          body_text: string | null
           cc_emails: string[]
           created_at: string
           detail: string | null
@@ -761,8 +774,10 @@ export type Database = {
           simulated: boolean
           status: string
           step_key: string
+          subject: string | null
         }
         Insert: {
+          body_text?: string | null
           cc_emails?: string[]
           created_at?: string
           detail?: string | null
@@ -777,8 +792,10 @@ export type Database = {
           simulated?: boolean
           status?: string
           step_key: string
+          subject?: string | null
         }
         Update: {
+          body_text?: string | null
           cc_emails?: string[]
           created_at?: string
           detail?: string | null
@@ -793,6 +810,7 @@ export type Database = {
           simulated?: boolean
           status?: string
           step_key?: string
+          subject?: string | null
         }
         Relationships: [
           {
@@ -1018,6 +1036,7 @@ export type Database = {
       claim_reminders: {
         Args: { p_reminders: Json }
         Returns: {
+          body_text: string | null
           cc_emails: string[]
           created_at: string
           detail: string | null
@@ -1032,6 +1051,7 @@ export type Database = {
           simulated: boolean
           status: string
           step_key: string
+          subject: string | null
         }[]
         SetofOptions: {
           from: "*"
@@ -1042,6 +1062,7 @@ export type Database = {
       }
       complete_form_item: { Args: { p_item_id: string }; Returns: undefined }
       complete_upload_item: { Args: { p_item_id: string }; Returns: undefined }
+      create_demo_project: { Args: never; Returns: string }
       create_invite: { Args: { p_email: string }; Returns: string }
       create_project: {
         Args: {
@@ -1056,6 +1077,16 @@ export type Database = {
           p_owner_role: Database["public"]["Enums"]["dutyholder_role"]
         }
         Returns: string
+      }
+      demo_step: {
+        Args: {
+          p_changes: Json
+          p_expected_day: number
+          p_project_id: string
+          p_reminders: Json
+          p_state: Json
+        }
+        Returns: number
       }
       finish_manual_chase: {
         Args: { p_detail: string; p_reminder_id: string; p_sent: boolean }

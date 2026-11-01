@@ -64,6 +64,18 @@ the full plan and `CLAUDE.md` for the working rules.
 - Owner dashboard: people × duties grid, last chased, next reminder, Pause
   and Chase now
 
+## Phase 6: what's built
+
+- **Try a demo** on the home page: a demo project with six fictional people
+  (client, principal designer, structural, fire and MEP engineers, principal
+  contractor), each with a scripted personality (`src/lib/demo/simulate.ts`)
+- Demo projects run on an anchored clock (`projectNow`): each simulated day is
+  10am on the next calendar day, so the real chasing rules apply unchanged
+- Controls: Advance 1 day, Advance to next event, Play (one day per second)
+- Outbox: every email the engine would have sent, word for word; demo projects
+  are invisible to the real cron job, so nobody fictional is ever emailed
+- Line chart of items complete by simulated day, with a table view
+
 ## First-time setup (dev project)
 
 1. **Supabase dashboard → your `dutyholder-dev` project:**

@@ -2,11 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RowActions } from "@/components/dashboard/row-actions";
+import { DemoPanel } from "@/components/demo/demo-panel";
+import { Outbox } from "@/components/demo/outbox";
+import { ProgressChart } from "@/components/demo/progress-chart";
+import type { DemoState } from "@/lib/demo/simulate";
 import { PageShell } from "@/components/projects/page-shell";
 import { ProgressBar } from "@/components/tasks/progress-bar";
 import { requireAal2 } from "@/lib/auth/server";
 import { nextChase, type ChaseState } from "@/lib/chase/plan";
-import { projectNow } from "@/lib/clock";
+import { londonParts, projectNow } from "@/lib/clock";
 import { STATUS_LABELS, rag, roleLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 
@@ -35,14 +39,17 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
 
   const [{ data: project }, { data: members }, { data: items }, { data: reminders }, { data: signatories }, { data: signed }] =
     await Promise.all([
-      supabase.from("projects").select("id, name, clock_offset_days, construction_start_date").eq("id", id).maybeSingle(),
+      supabase.from("projects")
+        .select("id, name, clock_offset_days, construction_start_date, is_demo, demo_started_at, demo_state")
+        .eq("id", id).maybeSingle(),
       supabase.from("project_members")
         .select("id, project_id, user_id, email, display_name, role, is_owner, chasing_paused, invited_at, created_at")
         .eq("project_id", id).is("removed_at", null).order("created_at"),
       supabase.from("checklist_items")
         .select("id, project_id, member_id, template_code, status, due_date, duty_templates(title, item_type, legal_reference, sort_order)")
         .eq("project_id", id).is("withdrawn_at", null),
-      supabase.from("reminders").select("member_id, project_id, step_key, kind, recipient_email, project_day, status, created_at")
+      supabase.from("reminders")
+        .select("id, member_id, project_id, step_key, kind, recipient_email, cc_emails, project_day, status, created_at, simulated, subject, body_text")
         .eq("project_id", id).order("created_at", { ascending: false }),
       supabase.from("appointment_signatories")
         .select("appointment_id, member_id, party, appointments!inner(kind, status, project_id)")
@@ -91,12 +98,30 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
         <div>
           <p className="text-sm text-muted-foreground">{project.name}</p>
           <h1 className="text-2xl font-semibold">Dashboard</h1>
-          {project.clock_offset_days > 0 && (
+          {project.clock_offset_days > 0 && !project.is_demo && (
             <p className="text-xs text-amber-700">Project clock is {project.clock_offset_days} days ahead: {shortDate(now)}</p>
           )}
         </div>
         <Link href={`/projects/${id}`} className="text-sm text-muted-foreground hover:underline">Project details</Link>
       </header>
+
+      {project.is_demo && (
+        <Card className="border-amber-300 dark:border-amber-800">
+          <CardHeader>
+            <CardTitle>Demo controls</CardTitle>
+            <CardDescription>
+              Fictional people, simulated time. Reminders come from the real chasing engine but go to the Outbox below,
+              never to anyone&apos;s inbox.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <DemoPanel projectId={id} day={project.clock_offset_days}
+              date={new Date(`${londonParts(now).date}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+              allGreen={all.length > 0 && green === all.length} />
+            <ProgressChart history={((project.demo_state ?? {}) as DemoState).history ?? []} total={all.length} />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="space-y-3 pt-6">
@@ -194,6 +219,26 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
           <p className="mt-3 text-xs text-muted-foreground">Hover a column heading or dot for the duty and its status.</p>
         </CardContent>
       </Card>
+
+      {project.is_demo && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Outbox</CardTitle>
+            <CardDescription>Every email the engine would have sent, word for word. Click one to read it.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Outbox entries={(reminders ?? []).filter((r) => r.simulated).map((r) => ({
+              id: r.id,
+              day: r.project_day,
+              to: members.find((m) => m.id === r.member_id) ? nameOf(members.find((m) => m.id === r.member_id)!) : r.recipient_email,
+              cc: r.cc_emails.map((e) => { const m = members.find((x) => x.email === e); return m ? nameOf(m) : e; }),
+              kind: r.kind,
+              subject: r.subject,
+              body: r.body_text,
+            }))} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

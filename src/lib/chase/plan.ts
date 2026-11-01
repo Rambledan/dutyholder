@@ -4,7 +4,14 @@
 
 import { daysBetween, isoWeek, isWorkingHours, londonParts, projectNow } from "@/lib/clock";
 
-export type ChaseProject = { id: string; name: string; clock_offset_days: number; construction_start_date: string | null };
+export type ChaseProject = {
+  id: string;
+  name: string;
+  clock_offset_days: number;
+  construction_start_date: string | null;
+  is_demo?: boolean;
+  demo_started_at?: string | null;
+};
 export type ChaseMember = {
   id: string;
   project_id: string;
