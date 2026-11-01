@@ -53,6 +53,7 @@ export type Database = {
       checklist_items: {
         Row: {
           answer: Json | null
+          competence_statement_id: string | null
           completed_at: string | null
           created_at: string
           due_date: string | null
@@ -67,6 +68,7 @@ export type Database = {
         }
         Insert: {
           answer?: Json | null
+          competence_statement_id?: string | null
           completed_at?: string | null
           created_at?: string
           due_date?: string | null
@@ -81,6 +83,7 @@ export type Database = {
         }
         Update: {
           answer?: Json | null
+          competence_statement_id?: string | null
           completed_at?: string | null
           created_at?: string
           due_date?: string | null
@@ -94,6 +97,13 @@ export type Database = {
           withdrawn_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "checklist_items_competence_statement_id_fkey"
+            columns: ["competence_statement_id"]
+            isOneToOne: false
+            referencedRelation: "competence_statements"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "checklist_items_member_id_fkey"
             columns: ["member_id"]
@@ -113,6 +123,159 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "duty_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competence_evidence: {
+        Row: {
+          document_id: string
+          statement_id: string
+        }
+        Insert: {
+          document_id: string
+          statement_id: string
+        }
+        Update: {
+          document_id?: string
+          statement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competence_evidence_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competence_evidence_statement_id_fkey"
+            columns: ["statement_id"]
+            isOneToOne: false
+            referencedRelation: "competence_statements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competence_statements: {
+        Row: {
+          behaviour_compliance: string
+          behaviour_cooperation: string
+          behaviour_limits: string
+          content_sha256: string | null
+          created_at: string
+          experience: string
+          has_serious_sanctions: boolean | null
+          id: string
+          knowledge: string
+          organisational_capability: string
+          sanctions_details: string
+          skills: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          behaviour_compliance?: string
+          behaviour_cooperation?: string
+          behaviour_limits?: string
+          content_sha256?: string | null
+          created_at?: string
+          experience?: string
+          has_serious_sanctions?: boolean | null
+          id?: string
+          knowledge?: string
+          organisational_capability?: string
+          sanctions_details?: string
+          skills?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+          version: number
+        }
+        Update: {
+          behaviour_compliance?: string
+          behaviour_cooperation?: string
+          behaviour_limits?: string
+          content_sha256?: string | null
+          created_at?: string
+          experience?: string
+          has_serious_sanctions?: boolean | null
+          id?: string
+          knowledge?: string
+          organisational_capability?: string
+          sanctions_details?: string
+          skills?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          checklist_item_id: string | null
+          created_at: string
+          file_name: string
+          id: string
+          kind: string
+          mime_type: string
+          owner_id: string
+          project_id: string | null
+          sha256: string
+          size_bytes: number
+          storage_path: string
+          withdrawn_at: string | null
+          withdrawn_reason: string | null
+        }
+        Insert: {
+          checklist_item_id?: string | null
+          created_at?: string
+          file_name: string
+          id?: string
+          kind: string
+          mime_type: string
+          owner_id: string
+          project_id?: string | null
+          sha256: string
+          size_bytes: number
+          storage_path: string
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Update: {
+          checklist_item_id?: string | null
+          created_at?: string
+          file_name?: string
+          id?: string
+          kind?: string
+          mime_type?: string
+          owner_id?: string
+          project_id?: string | null
+          sha256?: string
+          size_bytes?: number
+          storage_path?: string
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -267,6 +430,7 @@ export type Database = {
           display_name: string
           email: string
           id: string
+          invited_at: string | null
           is_firm: boolean
           is_owner: boolean
           project_id: string
@@ -282,6 +446,7 @@ export type Database = {
           display_name?: string
           email: string
           id?: string
+          invited_at?: string | null
           is_firm?: boolean
           is_owner?: boolean
           project_id: string
@@ -297,6 +462,7 @@ export type Database = {
           display_name?: string
           email?: string
           id?: string
+          invited_at?: string | null
           is_firm?: boolean
           is_owner?: boolean
           project_id?: string
@@ -368,6 +534,76 @@ export type Database = {
         }
         Relationships: []
       }
+      signatures: {
+        Row: {
+          checklist_item_id: string
+          id: string
+          ip_address: unknown
+          member_id: string
+          project_id: string
+          signed_at: string
+          statement: string
+          statement_sha256: string
+          template_code: string
+          template_version: number
+          typed_name: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          checklist_item_id: string
+          id?: string
+          ip_address?: unknown
+          member_id: string
+          project_id: string
+          signed_at?: string
+          statement: string
+          statement_sha256: string
+          template_code: string
+          template_version: number
+          typed_name: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          checklist_item_id?: string
+          id?: string
+          ip_address?: unknown
+          member_id?: string
+          project_id?: string
+          signed_at?: string
+          statement?: string
+          statement_sha256?: string
+          template_code?: string
+          template_version?: number
+          typed_name?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signatures_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: true
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signatures_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signatures_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -384,6 +620,36 @@ export type Database = {
         }
         Returns: string
       }
+      assert_my_item: {
+        Args: { p_item_id: string }
+        Returns: {
+          answer: Json | null
+          competence_statement_id: string | null
+          completed_at: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          member_id: string
+          project_id: string
+          status: Database["public"]["Enums"]["item_status"]
+          template_code: string
+          template_id: string
+          updated_at: string
+          withdrawn_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "checklist_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      assert_simple_form: {
+        Args: { v_item: Database["public"]["Tables"]["checklist_items"]["Row"] }
+        Returns: undefined
+      }
+      can_read_document: { Args: { p_document_id: string }; Returns: boolean }
+      can_read_storage_path: { Args: { p_path: string }; Returns: boolean }
       check_invite: { Args: { p_token: string }; Returns: string }
       checklist_wanted: {
         Args: { p_project_id: string }
@@ -393,6 +659,8 @@ export type Database = {
           template_id: string
         }[]
       }
+      complete_form_item: { Args: { p_item_id: string }; Returns: undefined }
+      complete_upload_item: { Args: { p_item_id: string }; Returns: undefined }
       create_invite: { Args: { p_email: string }; Returns: string }
       create_project: {
         Args: {
@@ -410,16 +678,60 @@ export type Database = {
       }
       generate_checklist: { Args: { p_project_id: string }; Returns: undefined }
       generate_recovery_codes: { Args: never; Returns: string[] }
+      invite_project_member: {
+        Args: { p_member_id: string }
+        Returns: {
+          email: string
+          owner_name: string
+          project_id: string
+          project_name: string
+          token: string
+        }[]
+      }
       is_aal2: { Args: never; Returns: boolean }
       is_project_member: { Args: { p_project_id: string }; Returns: boolean }
       is_project_owner: { Args: { p_project_id: string }; Returns: boolean }
+      normalise_name: { Args: { p_name: string }; Returns: string }
       normalise_recovery_code: { Args: { p_code: string }; Returns: string }
+      owns_project_using_statement: {
+        Args: { p_statement_id: string }
+        Returns: boolean
+      }
+      record_invite_email: {
+        Args: { p_detail: string; p_member_id: string; p_sent: boolean }
+        Returns: undefined
+      }
       record_mfa_enrolled: { Args: never; Returns: undefined }
       recovery_codes_remaining: { Args: never; Returns: number }
+      register_document: {
+        Args: {
+          p_file_name: string
+          p_item_id?: string
+          p_mime_type: string
+          p_sha256: string
+          p_size_bytes: number
+          p_storage_path: string
+        }
+        Returns: string
+      }
       request_ip: { Args: never; Returns: unknown }
+      save_item_answer: {
+        Args: { p_item_id: string; p_text: string }
+        Returns: undefined
+      }
       sha256_hex: { Args: { p_value: string }; Returns: string }
       shares_project_with: { Args: { p_user_id: string }; Returns: boolean }
+      sign_acknowledgement: {
+        Args: { p_item_id: string; p_typed_name: string; p_user_agent?: string }
+        Returns: string
+      }
+      start_competence_draft: { Args: never; Returns: string }
+      submit_competence: { Args: { p_item_id: string }; Returns: string }
       use_recovery_code: { Args: { p_code: string }; Returns: boolean }
+      withdraw_document: {
+        Args: { p_document_id: string; p_reason: string }
+        Returns: undefined
+      }
       write_audit: {
         Args: {
           p_action: string

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { safeNextPath } from "@/lib/auth/routing";
 import { createClient } from "@/lib/supabase/server";
 import { SignupForm } from "./signup-form";
 
@@ -14,8 +15,9 @@ export default function SignupPage(props: PageProps<"/signup">) {
 }
 
 async function InviteCheck({ searchParams }: { searchParams: PageProps<"/signup">["searchParams"] }) {
-  const { token } = await searchParams;
+  const { token, next } = await searchParams;
   const inviteToken = typeof token === "string" ? token : "";
+  const nextPath = safeNextPath(typeof next === "string" ? next : null);
 
   let email: string | null = null;
   if (inviteToken) {
@@ -39,5 +41,5 @@ async function InviteCheck({ searchParams }: { searchParams: PageProps<"/signup"
     );
   }
 
-  return <SignupForm email={email} token={inviteToken} />;
+  return <SignupForm email={email} token={inviteToken} next={nextPath} />;
 }

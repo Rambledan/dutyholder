@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 
 const MIN_PASSWORD = 12;
 
-export function SignupForm({ email, token }: { email: string; token: string }) {
+export function SignupForm({ email, token, next }: { email: string; token: string; next: string }) {
   const router = useRouter();
   // Swap to the next page and re-run the server checks with the new session.
   const navigate = (path: string) => {
@@ -54,7 +54,7 @@ export function SignupForm({ email, token }: { email: string; token: string }) {
       setCheckEmail(true);
       return;
     }
-    navigate("/mfa/enrol");
+    navigate(next === "/" ? "/mfa/enrol" : `/mfa/enrol?next=${encodeURIComponent(next)}`);
   }
 
   if (checkEmail) {

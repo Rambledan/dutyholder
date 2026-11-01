@@ -3,6 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAal2 } from "@/lib/auth/server";
+import { appUrl } from "@/lib/app-url";
+import { emailConfigured, sendEmail } from "@/lib/email";
+import { inviteEmail } from "@/lib/invite-email";
 import { ROLES, type DutyholderRole } from "@/lib/labels";
 
 export type FormState = { error: string | null };
@@ -95,4 +98,46 @@ export async function addMember(projectId: string, _prev: FormState, formData: F
 
   revalidatePath(`/projects/${projectId}`);
   return { error: null };
+}
+
+export type InviteResult =
+  | { ok: true; sent: true; email: string }
+  | { ok: true; sent: false; email: string; link: string; reason: string }
+  | { ok: false; error: string };
+
+// Creates a fresh single-use invite and emails it. If email isn't set up
+// (or fails), returns the link so the owner can send it themselves.
+export async function inviteMember(projectId: string, memberId: string): Promise<InviteResult> {
+  const { supabase } = await requireAal2();
+
+  const [{ data: invite, error }, { data: member }] = await Promise.all([
+    supabase.rpc("invite_project_member", { p_member_id: memberId }).single(),
+    supabase.from("project_members").select("role").eq("id", memberId).maybeSingle(),
+  ]);
+  if (error || !invite) return { ok: false, error: error?.message ?? "Couldn't create the invite." };
+
+  const next = `/projects/${projectId}/tasks`;
+  const link = `${await appUrl()}/signup?token=${invite.token}&next=${encodeURIComponent(next)}`;
+
+  revalidatePath(`/projects/${projectId}`);
+
+  if (!emailConfigured()) {
+    return { ok: true, sent: false, email: invite.email, link, reason: "Email sending isn't set up yet." };
+  }
+
+  const message = inviteEmail({
+    ownerName: invite.owner_name,
+    projectName: invite.project_name,
+    role: member?.role ?? null,
+    link,
+  });
+  const result = await sendEmail({ to: invite.email, ...message });
+  await supabase.rpc("record_invite_email", {
+    p_member_id: memberId,
+    p_sent: result.sent,
+    p_detail: result.sent ? result.id : result.reason,
+  });
+
+  if (result.sent) return { ok: true, sent: true, email: invite.email };
+  return { ok: true, sent: false, email: invite.email, link, reason: `The email couldn't be sent (${result.reason}).` };
 }

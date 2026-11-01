@@ -5,11 +5,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AddMemberForm } from "@/components/projects/add-member-form";
+import { InviteButton } from "@/components/projects/invite-button";
 import { PageShell } from "@/components/projects/page-shell";
 import { requireAal2 } from "@/lib/auth/server";
 import { DISCIPLINES, ITEM_TYPE_LABELS, STATUS_LABELS, rag, roleLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
-import { addMember } from "../actions";
+import { addMember, inviteMember } from "../actions";
 
 export const metadata = { title: "Project · Dutyholder" };
 
@@ -37,7 +38,7 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
     supabase.from("projects").select("*").eq("id", id).maybeSingle(),
     supabase
       .from("project_members")
-      .select("id, user_id, email, display_name, role, discipline, is_firm, is_owner, created_at")
+      .select("id, user_id, email, display_name, role, discipline, is_firm, is_owner, created_at, invited_at")
       .eq("project_id", id)
       .is("removed_at", null)
       .order("created_at"),
@@ -57,6 +58,9 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
     profiles?.find((p) => p.id === m.user_id)?.full_name || m.display_name || m.email;
 
   const activeItems = (items ?? []).filter((i) => !i.withdrawn_at);
+  const myMemberIds = members.filter((m) => m.user_id === userId).map((m) => m.id);
+  const myItems = activeItems.filter((i) => myMemberIds.includes(i.member_id));
+  const myDone = myItems.filter((i) => i.status === "complete" || i.status === "submitted").length;
   const withdrawnCount = (items ?? []).length - activeItems.length;
   const visibleMembers = members.filter((m) => activeItems.some((i) => i.member_id === m.id));
 
@@ -67,11 +71,18 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
           <h1 className="text-2xl font-semibold">{project.name}</h1>
           {project.address && <p className="text-sm text-muted-foreground">{project.address}</p>}
         </div>
-        {isOwner && (
-          <Link href={`/projects/${id}/edit`} className={buttonVariants({ variant: "outline" })}>
-            Edit set-up
-          </Link>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {myItems.length > 0 && (
+            <Link href={`/projects/${id}/tasks`} className={buttonVariants()}>
+              Your tasks ({myDone} of {myItems.length} done)
+            </Link>
+          )}
+          {isOwner && (
+            <Link href={`/projects/${id}/edit`} className={buttonVariants({ variant: "outline" })}>
+              Edit set-up
+            </Link>
+          )}
+        </div>
       </header>
 
       <Card>
@@ -124,7 +135,13 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
                     </TableCell>
                     <TableCell>{DISCIPLINES.find((d) => d.value === m.discipline)?.label ?? "—"}</TableCell>
                     <TableCell>
-                      {m.user_id ? "Joined" : <span className="text-muted-foreground">Not invited yet</span>}
+                      {m.user_id ? (
+                        "Joined"
+                      ) : isOwner ? (
+                        <InviteButton invitedAt={m.invited_at} invite={inviteMember.bind(null, id, m.id)} />
+                      ) : (
+                        <span className="text-muted-foreground">{m.invited_at ? "Invited" : "Not invited yet"}</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -135,7 +152,7 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
             <div className="border-t pt-6">
               <h3 className="mb-1 font-medium">Add a team member</h3>
               <p className="mb-4 text-sm text-muted-foreground">
-                Their checklist is created straight away. Invite emails arrive in phase 3.
+                Their checklist is created straight away. Then click Invite next to their name.
               </p>
               <AddMemberForm action={addMember.bind(null, id)} />
             </div>

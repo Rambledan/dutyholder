@@ -167,3 +167,25 @@ export async function activeCodesByEmail(db: PoolClient, projectId: string): Pro
   for (const r of rows) (out[r.email] ??= []).push(r.template_code);
   return out;
 }
+
+// The id of a member's active checklist item with the given template code.
+export async function itemId(db: PoolClient, projectId: string, email: string, code: string): Promise<string> {
+  const { rows } = await db.query(
+    `select i.id from public.checklist_items i join public.project_members m on m.id = i.member_id
+     where i.project_id = $1 and m.email = $2 and i.template_code = $3 and i.withdrawn_at is null`,
+    [projectId, email, code],
+  );
+  if (!rows[0]) throw new Error(`No ${code} item for ${email}`);
+  return rows[0].id;
+}
+
+// Simulate a file upload: a storage object in the user's own folder.
+export async function uploadObject(db: PoolClient, userId: string, fileName = "evidence.pdf"): Promise<string> {
+  const path = `${userId}/${randomUUID()}-${fileName}`;
+  await as(db, { id: userId, aal: "aal2" }, () =>
+    db.query("insert into storage.objects (bucket_id, name, owner_id) values ('evidence', $1, $2)", [path, userId]),
+  );
+  return path;
+}
+
+export const FAKE_SHA = "a".repeat(64);

@@ -25,8 +25,12 @@ async function Home() {
     supabase.from("profiles").select("full_name, company").eq("id", userId).maybeSingle(),
     supabase.rpc("recovery_codes_remaining"),
     supabase.from("projects").select("id, name, address").order("created_at", { ascending: false }),
-    supabase.from("project_members").select("project_id, role, is_owner").eq("user_id", userId).is("removed_at", null),
+    supabase.from("project_members").select("id, project_id, role, is_owner").eq("user_id", userId).is("removed_at", null),
   ]);
+  const { data: myItems } = myRoles?.length
+    ? await supabase.from("checklist_items").select("project_id, status")
+        .in("member_id", myRoles.map((r) => r.id)).is("withdrawn_at", null)
+    : { data: [] };
 
   return (
     <div className="space-y-6">
@@ -53,9 +57,13 @@ async function Home() {
             <ul className="divide-y">
               {projects.map((p) => {
                 const roles = (myRoles ?? []).filter((r) => r.project_id === p.id);
+                const items = (myItems ?? []).filter((i) => i.project_id === p.id);
+                const done = items.filter((i) => i.status === "complete" || i.status === "submitted").length;
+                const isOwner = roles.some((r) => r.is_owner);
                 return (
                   <li key={p.id}>
-                    <Link href={`/projects/${p.id}`} className="flex flex-wrap items-center justify-between gap-2 py-3 hover:underline">
+                    <Link href={isOwner ? `/projects/${p.id}` : `/projects/${p.id}/tasks`}
+                      className="flex flex-wrap items-center justify-between gap-2 py-3 hover:underline">
                       <span>
                         <span className="font-medium">{p.name}</span>
                         {p.address && <span className="block text-xs text-muted-foreground">{p.address}</span>}
@@ -63,6 +71,7 @@ async function Home() {
                       <span className="text-xs text-muted-foreground">
                         {roles.map((r) => (r.role ? roleLabel(r.role) : "Owner")).join(", ")}
                         {roles.some((r) => r.is_owner) && roles.some((r) => r.role) ? " · Owner" : ""}
+                        {items.length > 0 && ` · ${done} of ${items.length} tasks done`}
                       </span>
                     </Link>
                   </li>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -9,18 +9,21 @@ import { CodeInput } from "@/components/auth/code-input";
 import { FormError } from "@/components/auth/form-error";
 import { RecoveryCodes } from "@/components/auth/recovery-codes";
 import { signOut } from "@/app/actions";
+import { safeNextPath } from "@/lib/auth/routing";
 import { createClient } from "@/lib/supabase/client";
 
 type Enrolment = { factorId: string; qrCode: string; secret: string };
 
+const ABANDONED_AFTER_MS = 10 * 60 * 1000;
+
 export function EnrolForm() {
   const router = useRouter();
+  const next = safeNextPath(useSearchParams().get("next"));
   // Swap to the next page and re-run the server checks with the new session.
   const navigate = (path: string) => {
     router.replace(path);
     router.refresh();
   };
-  const started = useRef(false);
   const [enrolment, setEnrolment] = useState<Enrolment | null>(null);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,27 +32,42 @@ export function EnrolForm() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    // React runs effects twice in development; only enrol once.
-    if (started.current) return;
-    started.current = true;
+    // Each mount enrols its own factor and shows only that one. A mount that
+    // is torn down first (React's double-run in development, a refresh)
+    // removes its own unused factor.
+    let cancelled = false;
 
     (async () => {
       const supabase = createClient();
-      // Clear out any half-finished set-up from an earlier visit.
+      // Clear out half-finished set-ups abandoned more than 10 minutes ago.
+      // Recent ones are left alone: another copy of this page (a refresh, a
+      // second tab) may be showing that QR code right now.
       const { data: factors } = await supabase.auth.mfa.listFactors();
+      const cutoff = Date.now() - ABANDONED_AFTER_MS;
       for (const f of factors?.all ?? []) {
-        if (f.status === "unverified") await supabase.auth.mfa.unenroll({ factorId: f.id });
+        if (f.status === "unverified" && new Date(f.created_at).getTime() < cutoff) {
+          await supabase.auth.mfa.unenroll({ factorId: f.id });
+        }
       }
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: `Authenticator ${new Date().toISOString().slice(0, 10)}`,
+        // Must be unique per user, so add a short random suffix.
+        friendlyName: `Authenticator ${new Date().toISOString().slice(0, 10)} ${crypto.randomUUID().slice(0, 4)}`,
       });
+      if (cancelled) {
+        if (data) await supabase.auth.mfa.unenroll({ factorId: data.id });
+        return;
+      }
       if (error || !data) {
         setError(error?.message ?? "Couldn't start two-factor set-up. Refresh to try again.");
         return;
       }
       setEnrolment({ factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret });
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function onVerify(e: React.FormEvent) {
@@ -60,16 +78,25 @@ export function EnrolForm() {
     const supabase = createClient();
     const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: enrolment.factorId, code });
     if (error) {
-      setError("That code didn't work. Check your phone's clock is correct and try the newest code.");
+      setError(
+        error.code === "mfa_factor_not_found"
+          ? "This QR code has expired. Refresh the page to get a new one, and remove the old entry from your app."
+          : "That code didn't work. Check your phone's clock is correct and try the newest code.",
+      );
       setBusy(false);
       return;
+    }
+    // Tidy up any other half-finished set-ups now this one is verified.
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    for (const f of factors?.all ?? []) {
+      if (f.status === "unverified") await supabase.auth.mfa.unenroll({ factorId: f.id });
     }
     // The session is now aal2: record it and issue recovery codes.
     await supabase.rpc("record_mfa_enrolled");
     const { data: codes, error: codesError } = await supabase.rpc("generate_recovery_codes");
     if (codesError || !Array.isArray(codes)) {
       // 2FA is working; codes can be generated again from the home page.
-      navigate("/");
+      navigate(next);
       return;
     }
     setRecoveryCodes(codes as string[]);
@@ -92,7 +119,7 @@ export function EnrolForm() {
             <input type="checkbox" className="mt-1" checked={saved} onChange={(e) => setSaved(e.target.checked)} />
             <span>I&apos;ve saved these somewhere safe.</span>
           </label>
-          <Button className="w-full" disabled={!saved} onClick={() => navigate("/")}>
+          <Button className="w-full" disabled={!saved} onClick={() => navigate(next)}>
             Continue
           </Button>
         </CardContent>

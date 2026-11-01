@@ -25,6 +25,18 @@ the full plan and `CLAUDE.md` for the working rules.
 - RLS: members see the project and team; you see your own items, the owner
   sees everyone's; owners can read their project's audit trail
 
+## Phase 3: what's built
+
+- **Invite** button on the team list: emails a single-use link via Resend,
+  or shows it to copy if email isn't set up yet
+- Invited people land on **Your tasks** after sign-up and 2FA, with progress
+- Acknowledgements signed with a typed name; the exact wording is fingerprinted
+- Four-part competence statement (reg 11F/11Q(4)) that autosaves, belongs
+  to the person, is versioned and frozen once submitted, and can be reused
+- Evidence uploads to a private bucket; the server fingerprints each file
+  (SHA-256); files are withdrawn with a reason, never deleted
+- Simple form and upload tasks; appointments and reviews wait for phase 4
+
 ## First-time setup (dev project)
 
 1. **Supabase dashboard → your `dutyholder-dev` project:**
