@@ -8,6 +8,8 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { FormError } from "@/components/auth/form-error";
 import { DISCIPLINES, ROLES } from "@/lib/labels";
 import type { FormState } from "@/app/projects/actions";
+import { Term } from "@/components/help/term";
+import { HelpLink } from "@/components/help/help-link";
 
 export function AddMemberForm(props: { action: (prev: FormState, formData: FormData) => Promise<FormState> }) {
   const [state, formAction, pending] = useActionState(props.action, { error: null });
@@ -32,7 +34,7 @@ export function AddMemberForm(props: { action: (prev: FormState, formData: FormD
           <Input id="display_name" name="display_name" placeholder="Optional" />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="role">Role</Label>
+          <Label htmlFor="role">Role <HelpLink topic="roles" /></Label>
           <NativeSelect id="role" name="role" required defaultValue="">
             <option value="" disabled>Choose a role…</option>
             {ROLES.map((r) => (
@@ -52,7 +54,7 @@ export function AddMemberForm(props: { action: (prev: FormState, formData: FormD
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="is_firm" />
-        This appointment is held by a firm, not an individual
+        <Term id="firm">This appointment is held by a firm, not an individual</Term>
       </label>
       <Button type="submit" disabled={pending}>{pending ? "Adding…" : "Add to team"}</Button>
     </form>

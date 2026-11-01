@@ -91,6 +91,15 @@ the full plan and `CLAUDE.md` for the working rules.
 - The export job (`src/lib/evidence/job.ts`) is the only other user of the
   secret key, as PLAN.md allows
 
+## Help system
+
+- `/help`: every help topic with search and a glossary, open to everyone
+  (signed in or not). All wording lives in `src/lib/help/content.ts`
+- ⓘ marks (`<Term id="…">`) beside technical terms show a short definition
+  on hover or tap, with a link to the full topic
+- ? marks (`<HelpLink topic="…">`) beside headings link to the topic
+- A unit test fails if any mark points at a term or topic that doesn't exist
+
 ## First-time setup (dev project)
 
 1. **Supabase dashboard → your `dutyholder-dev` project:**

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PageShell } from "@/components/projects/page-shell";
 import { ReportChangeForm } from "@/components/review/report-change-form";
 import { requireAal2 } from "@/lib/auth/server";
+import { HelpLink } from "@/components/help/help-link";
 
 export const metadata = { title: "Report a change · Dutyholder" };
 
@@ -25,7 +26,7 @@ async function ReportChange({ params }: { params: PageProps<"/projects/[id]/repo
       <Card>
         <CardHeader>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Reg 11I</p>
-          <CardTitle className="text-xl">Report a change in your competence</CardTitle>
+          <CardTitle className="flex items-center gap-1.5 text-xl">Report a change in your competence <HelpLink topic="report-change" /></CardTitle>
           <CardDescription className="text-base">
             If you no longer meet the competence requirements for your work on this project, the law asks you to tell
             whoever appointed you. This tells the project owner, records the report, and sends your competence

@@ -8,6 +8,8 @@ import { ITEM_TYPE_LABELS, STATUS_LABELS, rag } from "@/lib/labels";
 import { KIND_LABELS, PARTY_LABELS } from "@/lib/letters";
 import { loadMyTasks, nextTask, progress } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
+import { Term } from "@/components/help/term";
+import { HelpLink } from "@/components/help/help-link";
 
 export const metadata = { title: "Your tasks · Dutyholder" };
 
@@ -59,9 +61,9 @@ async function Tasks({ params }: { params: PageProps<"/projects/[id]/tasks">["pa
     <div className="space-y-6">
       <header className="space-y-1">
         <p className="text-sm text-muted-foreground">{project.name}</p>
-        <h1 className="text-2xl font-semibold">Your tasks</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold">Your tasks <HelpLink topic="tasks" /></h1>
         <p className="text-sm text-muted-foreground">
-          Your duties on this project under Part 2A of the Building Regulations. Most take a minute or two; the
+          Your duties on this project under <Term id="part-2a">Part 2A of the Building Regulations</Term>. Most take a minute or two; the
           competence statement takes longest. Everything saves as you go.
         </p>
       </header>

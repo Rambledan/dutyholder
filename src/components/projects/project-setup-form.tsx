@@ -11,6 +11,8 @@ import { FormError } from "@/components/auth/form-error";
 import { YesNo } from "@/components/projects/yes-no";
 import { ROLES } from "@/lib/labels";
 import type { FormState } from "@/app/projects/actions";
+import { Term } from "@/components/help/term";
+import { HelpLink } from "@/components/help/help-link";
 
 export type SetupValues = {
   name: string;
@@ -75,10 +77,10 @@ export function ProjectSetupForm(props: {
       </div>
 
       <p className="rounded-lg border bg-muted/40 p-3 text-sm">
-        <span className="font-medium">Jurisdiction:</span> England (Part 2A of the Building Regulations 2010).
+        <span className="font-medium">Jurisdiction:</span> England (<Term id="part-2a">Part 2A of the Building Regulations 2010</Term>).
       </p>
 
-      <YesNo name="is_higher_risk" legend="Is any of this higher-risk building work?"
+      <YesNo name="is_higher_risk" legend={<Term id="higher-risk">Is any of this higher-risk building work?</Term>}
         hint="At least 18m or 7 storeys with 2 or more homes, or a hospital or care home."
         value={higherRisk} onChange={setHigherRisk} />
       {higherRisk && (
@@ -90,7 +92,7 @@ export function ProjectSetupForm(props: {
         </Alert>
       )}
 
-      <YesNo name="is_domestic_client" legend="Is the client a domestic client?"
+      <YesNo name="is_domestic_client" legend={<Term id="domestic-client">Is the client a domestic client?</Term>}
         hint="A homeowner having work done on their own home, not in the course of a business."
         value={domestic} onChange={setDomestic} />
       {domestic && (
@@ -103,7 +105,9 @@ export function ProjectSetupForm(props: {
       )}
 
       <fieldset className="space-y-1.5">
-        <legend className="text-sm font-medium">How many contractors will work on the project?</legend>
+        <legend className="text-sm font-medium">
+          <Term id="contractors">How many contractors will work on the project?</Term>
+        </legend>
         <div className="flex gap-4 text-sm">
           <label className="flex items-center gap-1.5">
             <input type="radio" name="contractors" value="one" checked={oneContractor}
@@ -123,14 +127,14 @@ export function ProjectSetupForm(props: {
           <input type="checkbox" name="cdm_pd_certified" className="mt-1" defaultChecked={initial.cdmPdCertified} />
           <span>
             The client will certify that the CDM 2015 principal designer is also the Building Regulations principal
-            designer (reg 11D(2)).
+            designer (<Term id="cdm">reg 11D(2)</Term>).
           </span>
         </label>
       )}
 
       {props.askOwnerRole && (
         <div className="space-y-2">
-          <Label htmlFor="owner_role">Your role on this project</Label>
+          <Label htmlFor="owner_role">Your role on this project <HelpLink topic="roles" /></Label>
           <NativeSelect id="owner_role" name="owner_role" defaultValue="principal_designer">
             {ROLES.map((r) => (
               <option key={r.value} value={r.value}>{r.label}</option>

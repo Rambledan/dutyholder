@@ -11,6 +11,7 @@ import { RecoveryCodes } from "@/components/auth/recovery-codes";
 import { signOut } from "@/app/actions";
 import { safeNextPath } from "@/lib/auth/routing";
 import { createClient } from "@/lib/supabase/client";
+import { HelpLink } from "@/components/help/help-link";
 
 type Enrolment = { factorId: string; qrCode: string; secret: string };
 
@@ -107,7 +108,7 @@ export function EnrolForm() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Save your recovery codes</CardTitle>
+          <CardTitle className="flex items-center gap-1.5">Save your recovery codes <HelpLink topic="two-factor" /></CardTitle>
           <CardDescription>
             If you lose your phone, each of these codes lets you back in once. This is the only time
             they&apos;ll be shown.
@@ -130,7 +131,7 @@ export function EnrolForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Set up two-factor login</CardTitle>
+        <CardTitle className="flex items-center gap-1.5">Set up two-factor login <HelpLink topic="two-factor" /></CardTitle>
         <CardDescription>
           Two-factor is required for everyone. Scan this QR code with an authenticator app such as
           Google Authenticator, Microsoft Authenticator or 1Password.

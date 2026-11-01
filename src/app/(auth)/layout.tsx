@@ -7,6 +7,9 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
           Dutyholder
         </p>
         {children}
+        <p className="mt-6 text-center text-sm">
+          <a href="/help" className="text-muted-foreground hover:underline">Help with signing in</a>
+        </p>
       </div>
     </main>
   );

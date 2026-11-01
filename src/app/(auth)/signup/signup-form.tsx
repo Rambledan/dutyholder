@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormError } from "@/components/auth/form-error";
 import { createClient } from "@/lib/supabase/client";
+import { Term } from "@/components/help/term";
 
 const MIN_PASSWORD = 12;
 
@@ -75,7 +76,7 @@ export function SignupForm({ email, token, next }: { email: string; token: strin
         <CardTitle>Create your account</CardTitle>
         <CardDescription>
           You&apos;ve been invited to record your Building Regulations dutyholder information.
-          After this you&apos;ll set up two-factor login on your phone.
+          After this you&apos;ll set up <Term id="two-factor">two-factor login</Term> on your phone.
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -6,6 +6,7 @@ import { PageShell } from "@/components/projects/page-shell";
 import { letterContext } from "@/lib/appointments";
 import { requireAal2 } from "@/lib/auth/server";
 import { KIND_LABELS, formatLetterDate, type AppointmentKind } from "@/lib/letters";
+import { HelpLink } from "@/components/help/help-link";
 
 export const metadata = { title: "Prepare appointment · Dutyholder" };
 
@@ -34,7 +35,7 @@ async function NewAppointment(props: {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">{KIND_LABELS[kind]}</CardTitle>
+        <CardTitle className="flex items-center gap-1.5 text-xl">{KIND_LABELS[kind]} <HelpLink topic="principal-appointments" /></CardTitle>
         <CardDescription>
           {kind === "lead_designer_agreement"
             ? "Every designer on the project will be asked to sign."

@@ -5,11 +5,12 @@ import { Suspense } from "react";
 export function PageShell(props: { back?: { href: string; label: string }; children: React.ReactNode }) {
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
-      {props.back && (
-        <Link href={props.back.href} className="mb-4 inline-block text-sm text-muted-foreground hover:underline">
-          ← {props.back.label}
-        </Link>
-      )}
+      <div className="mb-4 flex items-center justify-between gap-4 text-sm">
+        {props.back ? (
+          <Link href={props.back.href} className="text-muted-foreground hover:underline">← {props.back.label}</Link>
+        ) : <span />}
+        <Link href="/help" className="text-muted-foreground hover:underline">Help</Link>
+      </div>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>{props.children}</Suspense>
     </main>
   );

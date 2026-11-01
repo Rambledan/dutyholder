@@ -11,6 +11,7 @@ import { FormError } from "@/components/auth/form-error";
 import { signOut } from "@/app/actions";
 import { safeNextPath } from "@/lib/auth/routing";
 import { createClient } from "@/lib/supabase/client";
+import { HelpLink } from "@/components/help/help-link";
 
 export function VerifyForm() {
   const router = useRouter();
@@ -48,7 +49,7 @@ export function VerifyForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Enter your two-factor code</CardTitle>
+        <CardTitle className="flex items-center gap-1.5">Enter your two-factor code <HelpLink topic="two-factor" /></CardTitle>
         <CardDescription>Open your authenticator app and type the 6-digit code for Dutyholder.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

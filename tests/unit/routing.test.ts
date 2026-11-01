@@ -48,6 +48,13 @@ describe("decideAccess", () => {
     expect(decideAccess({ ...s, path: "/mfa/verify" })).toEqual({ kind: "redirect", to: "/" });
   });
 
+  it("lets anyone read Help, at every stage of login", () => {
+    expect(decideAccess({ ...base, path: "/help" })).toEqual({ kind: "allow" });
+    expect(decideAccess({ ...base, path: "/help", signedIn: true, aal: "aal1", hasVerifiedFactor: true })).toEqual({ kind: "allow" });
+    expect(decideAccess({ ...base, path: "/help", signedIn: true, aal: "aal2", hasVerifiedFactor: true })).toEqual({ kind: "allow" });
+    expect(decideAccess({ ...base, path: "/helpful" }).kind).toBe("redirect");
+  });
+
   it("does not treat look-alike paths as public", () => {
     const s = { ...base, path: "/loginx" };
     expect(decideAccess(s).kind).toBe("redirect");

@@ -7,6 +7,8 @@ import { requireAal2 } from "@/lib/auth/server";
 import { roleLabel } from "@/lib/labels";
 import { signOut } from "./actions";
 import { createDemo } from "./projects/demo-actions";
+import { Term } from "@/components/help/term";
+import { HelpLink } from "@/components/help/help-link";
 
 export default function HomePage() {
   return (
@@ -40,9 +42,12 @@ async function Home() {
           <h1 className="text-2xl font-semibold">Hello{profile?.full_name ? `, ${profile.full_name}` : ""}</h1>
           <p className="text-sm text-muted-foreground">{email}</p>
         </div>
-        <form action={signOut}>
-          <Button type="submit" variant="outline">Sign out</Button>
-        </form>
+        <div className="flex items-center gap-3">
+          <Link href="/help" className="text-sm text-muted-foreground hover:underline">Help</Link>
+          <form action={signOut}>
+            <Button type="submit" variant="outline">Sign out</Button>
+          </form>
+        </div>
       </header>
 
       <Card>
@@ -92,12 +97,12 @@ async function Home() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Security</CardTitle>
+          <CardTitle className="flex items-center gap-1.5">Security <HelpLink topic="two-factor" /></CardTitle>
           <CardDescription>Two-factor login is on for your account.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p>
-            Recovery codes left: <span className="font-medium">{typeof remaining === "number" ? remaining : "—"}</span>
+            <Term id="recovery-codes">Recovery codes</Term> left: <span className="font-medium">{typeof remaining === "number" ? remaining : "—"}</span>
           </p>
           <RegenerateRecoveryCodes />
         </CardContent>

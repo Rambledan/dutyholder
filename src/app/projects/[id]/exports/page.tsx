@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ExportControls } from "@/components/exports/export-controls";
 import { PageShell } from "@/components/projects/page-shell";
 import { requireAal2 } from "@/lib/auth/server";
+import { Term } from "@/components/help/term";
+import { HelpLink } from "@/components/help/help-link";
 
 export const metadata = { title: "Evidence pack · Dutyholder" };
 
@@ -39,11 +41,11 @@ async function Exports({ params }: { params: PageProps<"/projects/[id]/exports">
       <Card>
         <CardHeader>
           <p className="text-sm text-muted-foreground">{project.name}</p>
-          <CardTitle className="text-xl">Evidence pack</CardTitle>
+          <CardTitle className="flex items-center gap-1.5 text-xl">Evidence pack <HelpLink topic="evidence-pack" /></CardTitle>
           <CardDescription className="text-base">
             A zip of everything on record: appointments, competence statements with their evidence, signed
-            acknowledgements, notifications, the handover and the full audit trail, with an index listing every
-            file&apos;s SHA-256 fingerprint. Packs can be downloaded for 24 hours.
+            acknowledgements, notifications, the handover and the full <Term id="audit-trail">audit trail</Term>, with an index
+            listing every file&apos;s <Term id="sha256">SHA-256 fingerprint</Term>. Packs can be downloaded for 24 hours.
             {project.is_demo && " This is a demo project, so the pack is marked as simulated."}
           </CardDescription>
         </CardHeader>

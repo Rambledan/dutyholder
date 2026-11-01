@@ -1,7 +1,7 @@
 // A yes/no question as two radio buttons.
 export function YesNo(props: {
   name: string;
-  legend: string;
+  legend: React.ReactNode;
   hint?: string;
   value: boolean;
   onChange: (value: boolean) => void;

@@ -7,6 +7,7 @@ import { StatementView } from "@/components/tasks/competence-form";
 import { requireAal2 } from "@/lib/auth/server";
 import { STATUS_LABELS, roleLabel } from "@/lib/labels";
 import { loadStatement } from "@/lib/statements";
+import { HelpLink } from "@/components/help/help-link";
 
 export const metadata = { title: "Review competence · Dutyholder" };
 
@@ -59,7 +60,7 @@ async function Review({ params }: { params: Params }) {
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Reg 11E · {STATUS_LABELS[item.status]}
           </p>
-          <CardTitle className="text-xl">Review competence: {name}</CardTitle>
+          <CardTitle className="flex items-center gap-1.5 text-xl">Review competence: {name} <HelpLink topic="reviews" /></CardTitle>
           <CardDescription>
             {roleLabel(member.role)}{member.is_firm && " (firm)"}. The law asks whoever appoints them to take reasonable
             steps to be satisfied they are competent. Read the statement and evidence, then record your decision.

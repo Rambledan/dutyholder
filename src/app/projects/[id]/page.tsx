@@ -12,6 +12,7 @@ import { DISCIPLINES, ITEM_TYPE_LABELS, STATUS_LABELS, rag, roleLabel } from "@/
 import { cn } from "@/lib/utils";
 import { addMember, inviteMember } from "../actions";
 import { KIND_LABELS, type AppointmentKind } from "@/lib/letters";
+import { HelpLink } from "@/components/help/help-link";
 
 export const metadata = { title: "Project · Dutyholder" };
 
@@ -134,7 +135,7 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
 
       <Card>
         <CardHeader>
-          <CardTitle>Team</CardTitle>
+          <CardTitle className="flex items-center gap-1.5">Team <HelpLink topic="roles" /></CardTitle>
           <CardDescription>Everyone on the project can see this list.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -189,7 +190,7 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
 
       <Card>
         <CardHeader>
-          <CardTitle>Appointments</CardTitle>
+          <CardTitle className="flex items-center gap-1.5">Appointments <HelpLink topic="principal-appointments" /></CardTitle>
           <CardDescription>Written appointments and agreements under reg 11D. Everyone on the project can see these.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -225,7 +226,7 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
       {isReviewer && competenceItems.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Competence reviews</CardTitle>
+            <CardTitle className="flex items-center gap-1.5">Competence reviews <HelpLink topic="reviews" /></CardTitle>
             <CardDescription>Review each person&apos;s competence statement and evidence (reg 11E).</CardDescription>
           </CardHeader>
           <CardContent>
@@ -254,7 +255,9 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold">{isOwner ? "Checklists" : "Your checklist"}</h2>
+          <h2 className="flex items-center gap-1.5 text-lg font-semibold">
+            {isOwner ? "Checklists" : "Your checklist"} <HelpLink topic="statuses" />
+          </h2>
           <p className="text-sm text-muted-foreground">
             {isOwner ? "Each person's duties under Part 2A." : "Your duties on this project under Part 2A."}
             {withdrawnCount > 0 && ` ${withdrawnCount} item(s) withdrawn after set-up changes are kept on record.`}

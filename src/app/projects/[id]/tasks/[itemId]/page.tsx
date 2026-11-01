@@ -13,6 +13,7 @@ import { loadStatement } from "@/lib/statements";
 import { KIND_BY_CODE, KIND_LABELS } from "@/lib/letters";
 import { loadMyTasks, nextTask } from "@/lib/tasks";
 import { buttonVariants } from "@/components/ui/button";
+import { HelpLink } from "@/components/help/help-link";
 
 export const metadata = { title: "Task · Dutyholder" };
 
@@ -206,7 +207,13 @@ async function TaskView({ params }: { params: Params }) {
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {task.legalReference} · {STATUS_LABELS[task.status]}
           </p>
-          <CardTitle className="text-xl">{task.title}</CardTitle>
+          <CardTitle className="flex items-start gap-1.5 text-xl">
+            {task.title}
+            <HelpLink className="mt-1" topic={
+              task.code === "ALL-11F-COMPETENCE" ? "competence"
+                : ({ acknowledge: "signatures", sign: "principal-appointments", review: "reviews", upload: "uploads" } as Record<string, string>)[task.itemType] ?? "tasks"
+            } />
+          </CardTitle>
           <CardDescription className="text-base">{task.explanation}</CardDescription>
           {task.legislationUrl && (
             <a href={task.legislationUrl} target="_blank" rel="noopener noreferrer"

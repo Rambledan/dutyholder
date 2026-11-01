@@ -8,6 +8,8 @@ import { PageShell } from "@/components/projects/page-shell";
 import { people } from "@/lib/appointments";
 import { requireAal2 } from "@/lib/auth/server";
 import { KIND_LABELS, partyLabel } from "@/lib/letters";
+import { Term } from "@/components/help/term";
+import { HelpLink } from "@/components/help/help-link";
 
 export const metadata = { title: "Appointment · Dutyholder" };
 
@@ -64,14 +66,14 @@ async function Appointment({ params }: { params: Params }) {
           </p>
           <CardTitle className="text-xl">{a.letter_title}</CardTitle>
           <CardDescription className="font-mono text-xs">
-            Fingerprint {a.letter_sha256.slice(0, 16)}… · template {a.template_version}
+            <Term id="sha256">Fingerprint</Term> {a.letter_sha256.slice(0, 16)}… · template {a.template_version}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <pre className="whitespace-pre-wrap rounded-lg border bg-muted/30 p-4 font-sans text-sm leading-relaxed">{a.letter_text}</pre>
 
           <div>
-            <h3 className="mb-2 text-sm font-medium">Signatures</h3>
+            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-medium">Signatures <HelpLink topic="signatures" /></h3>
             <ul className="divide-y rounded-lg border text-sm">
               {rows.map((r) => (
                 <li key={`${r.member_id}-${r.party}`} className="flex flex-wrap justify-between gap-2 p-3">
@@ -96,7 +98,9 @@ async function Appointment({ params }: { params: Params }) {
             <a href={`/projects/${projectId}/appointments/${a.id}/pdf`} className={buttonVariants({ variant: "outline" })}>
               Download PDF
             </a>
-            {isOwner && a.status !== "void" && <VoidButton projectId={projectId} appointmentId={a.id} />}
+            {isOwner && a.status !== "void" && (
+              <Term id="void"><VoidButton projectId={projectId} appointmentId={a.id} /></Term>
+            )}
           </div>
         </CardContent>
       </Card>

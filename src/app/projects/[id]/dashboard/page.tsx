@@ -13,6 +13,8 @@ import { nextChase, type ChaseState } from "@/lib/chase/plan";
 import { londonParts, projectNow } from "@/lib/clock";
 import { STATUS_LABELS, rag, roleLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
+import { Term } from "@/components/help/term";
+import { HelpLink } from "@/components/help/help-link";
 
 export const metadata = { title: "Dashboard · Dutyholder" };
 
@@ -111,7 +113,7 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
       {project.is_demo && (
         <Card className="border-amber-300 dark:border-amber-800">
           <CardHeader>
-            <CardTitle>Demo controls</CardTitle>
+            <CardTitle className="flex items-center gap-1.5">Demo controls <HelpLink topic="demo" /></CardTitle>
             <CardDescription>
               Fictional people, simulated time. Reminders come from the real chasing engine but go to the Outbox below,
               never to anyone&apos;s inbox.
@@ -139,9 +141,9 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
 
       <Card>
         <CardHeader>
-          <CardTitle>People × duties</CardTitle>
+          <CardTitle className="flex items-center gap-1.5">People × duties <HelpLink topic="statuses" /></CardTitle>
           <CardDescription>
-            Reminders go out automatically on weekdays, 8am–6pm, at most one email per person per day, signed on your behalf.
+            <Term id="reminders">Reminders</Term> go out automatically on weekdays, 8am–6pm, at most one email per person per day, signed on your behalf.
             Pause anyone you&apos;d rather speak to yourself.
           </CardDescription>
         </CardHeader>
@@ -226,7 +228,7 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
       {project.is_demo && (
         <Card>
           <CardHeader>
-            <CardTitle>Outbox</CardTitle>
+            <CardTitle className="flex items-center gap-1.5">Outbox <HelpLink topic="demo" /></CardTitle>
             <CardDescription>Every email the engine would have sent, word for word. Click one to read it.</CardDescription>
           </CardHeader>
           <CardContent>

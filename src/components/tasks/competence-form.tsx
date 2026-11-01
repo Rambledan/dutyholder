@@ -13,6 +13,7 @@ import {
 import { FileList, type FileRow } from "./file-list";
 import { FileUploader } from "./file-uploader";
 import { SaveStatus, useAutosave } from "./use-autosave";
+import { Term } from "@/components/help/term";
 
 export type Statement = CompetenceFields & { version: number; submittedAt: string | null; files: FileRow[] };
 
@@ -129,7 +130,11 @@ export function CompetenceForm(props: {
         const heading = i === 0 || QUESTIONS[i - 1].group !== q.group ? q.group : null;
         return (
           <div key={q.key} className="space-y-2">
-            {heading && <h3 className="pt-2 text-base font-semibold">{heading}</h3>}
+            {heading && (
+              <h3 className="pt-2 text-base font-semibold">
+                <Term id={heading.startsWith("Behaviours") ? "behaviours" : "competence"}>{heading}</Term>
+              </h3>
+            )}
             <Label htmlFor={q.key}>{q.label}</Label>
             <p className="text-xs text-muted-foreground">{q.hint}</p>
             <Textarea id={q.key} rows={4} className="text-base" value={fields[q.key] as string}
@@ -140,7 +145,7 @@ export function CompetenceForm(props: {
 
       {props.isFirm && (
         <div className="space-y-2">
-          <h3 className="pt-2 text-base font-semibold">Organisational capability</h3>
+          <h3 className="pt-2 text-base font-semibold"><Term id="organisational-capability">Organisational capability</Term></h3>
           <Label htmlFor="organisational_capability">
             Describe your firm&apos;s capability to do this work in compliance with the regulations.
           </Label>
@@ -191,7 +196,8 @@ export function CompetenceForm(props: {
           {busy ? "Submitting…" : "Submit for review"}
         </Button>
         <p className="text-xs text-muted-foreground">
-          Once submitted, this version is locked and fingerprinted. Whoever appointed you will review it.
+          Once submitted, this version is locked and <Term id="sha256">fingerprinted</Term>. Whoever appointed you will{" "}
+          <Term id="review">review it</Term>.
         </p>
       </div>
     </div>

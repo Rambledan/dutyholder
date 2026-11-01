@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { fileLink, withdrawDocument } from "@/app/projects/task-actions";
+import { Term } from "@/components/help/term";
 
 export type FileRow = { id: string; fileName: string; sizeBytes: number; sha256: string; createdAt?: string };
 
@@ -41,13 +42,15 @@ export function FileList(props: { projectId: string; files: FileRow[]; canWithdr
             <div className="min-w-0">
               <div className="truncate font-medium">{f.fileName}</div>
               <div className="font-mono text-xs text-muted-foreground" title={`SHA-256 ${f.sha256}`}>
-                {formatBytes(f.sizeBytes)} · SHA-256 {f.sha256.slice(0, 12)}…
+                {formatBytes(f.sizeBytes)} · <Term id="sha256">SHA-256</Term> {f.sha256.slice(0, 12)}…
               </div>
             </div>
             <div className="flex gap-1">
               <Button type="button" size="sm" variant="outline" onClick={() => open(f.id)}>View</Button>
               {props.canWithdraw && (
-                <Button type="button" size="sm" variant="ghost" onClick={() => withdraw(f.id)}>Withdraw</Button>
+                <Term id="withdrawn">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => withdraw(f.id)}>Withdraw</Button>
+                </Term>
               )}
             </div>
           </li>
