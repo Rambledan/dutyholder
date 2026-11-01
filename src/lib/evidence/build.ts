@@ -1,0 +1,303 @@
+// Turns a project's records into the evidence pack's files, in the folder
+// structure from PLAN.md. No database access: give it PackData, get back
+// file paths and bytes, a manifest with SHA-256 fingerprints, and warnings.
+
+import { createHash } from "node:crypto";
+import { createElement, type ReactElement } from "react";
+import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
+import { RecordPdf, hashLines, pathLines, type Section } from "@/lib/pdf/record-pdf";
+import { csvCell, toCsv } from "./csv";
+import type { PackData, PackMember, PackStatement } from "./types";
+
+const ROLE: Record<string, string> = {
+  client: "Client", principal_designer: "Principal designer", designer: "Designer",
+  principal_contractor: "Principal contractor", contractor: "Contractor",
+};
+const KIND: Record<string, string> = {
+  pd_appointment: "Principal designer appointment", pc_appointment: "Principal contractor appointment",
+  lead_designer_agreement: "Lead designer agreement", cdm_certification: "CDM principal designer certification",
+};
+const KIND_FILE: Record<string, string> = {
+  pd_appointment: "PD_appointment", pc_appointment: "PC_appointment",
+  lead_designer_agreement: "Lead_designer_agreement", cdm_certification: "CDM_certification",
+};
+
+export const sha256 = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
+
+const when = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/London" }) : "—";
+const day = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleDateString("en-GB", { dateStyle: "long", timeZone: "Europe/London" }) : "—";
+
+export function slug(value: string, max = 40): string {
+  const s = value.normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s-]+/g, "_");
+  return (s || "untitled").slice(0, max);
+}
+
+export function packRef(project: { name: string; id: string }) {
+  return `${slug(project.name)}_${project.id.slice(0, 8)}`;
+}
+
+const RAG = (status: string) =>
+  status === "complete" ? "Green" : status === "in_progress" || status === "submitted" ? "Amber" : "Red";
+
+export async function buildPack(data: PackData) {
+  const ref = packRef(data.project);
+  const footer = `Dutyholder evidence pack · ${ref} · generated ${when(data.generatedAt.toISOString())}`;
+  const entries = new Map<string, Uint8Array>();
+  const warnings: string[] = [];
+
+  const pdf = async (path: string, doc: { kicker: string; title: string; subtitle?: string; sections: Section[] }) => {
+    const el = createElement(RecordPdf, { ...doc, footer }) as unknown as ReactElement<DocumentProps>;
+    entries.set(path, new Uint8Array(await renderToBuffer(el)));
+  };
+  const text = (path: string, body: string) => entries.set(path, new TextEncoder().encode(body));
+
+  // One folder per person; names made safe and unique.
+  const folders = new Map<string, string>();
+  const used = new Set<string>();
+  for (const m of data.members) {
+    let name = slug(m.name, 30);
+    if (used.has(name)) name = `${name}_${m.id.slice(0, 4)}`;
+    used.add(name);
+    folders.set(m.id, name);
+  }
+  const member = (id: string) => data.members.find((m) => m.id === id);
+  const itemsOf = (m: PackMember) => data.items.filter((i) => i.member_id === m.id);
+  const answerOf = (code: string) => data.items.filter((i) => i.code === code && i.answer?.text);
+
+  const p = data.project;
+  if (p.is_demo) warnings.push("This is a DEMO project: people and activity are simulated, not real records.");
+
+  // 01 Project ---------------------------------------------------------------
+  await pdf("01_Project/Project_summary.pdf", {
+    kicker: "Project",
+    title: p.name,
+    subtitle: p.address,
+    sections: [
+      { heading: "Set-up answers", blocks: [{ type: "facts", rows: [
+        ["Jurisdiction", "England (Building Regulations 2010, Part 2A)"],
+        ["Domestic client", p.is_domestic_client ? (p.domestic_duties_to_pd ? "Yes – principal designer carries out client duties (agreed in writing)" : "Yes – contractor side carries out client duties (reg 11C)") : "No"],
+        ["Contractors", p.expected_contractors > 1 ? "More than one" : "Only one"],
+        ["CDM principal designer certification", p.cdm_pd_certified ? "Yes (reg 11D(2))" : "No"],
+        ["Higher-risk building work", "No"],
+        ["Construction start", day(p.construction_start_date)],
+        ["Records kept for", `${p.retention_years} years after the project`],
+        ["Project created", when(p.created_at)],
+      ] }] },
+      { heading: "Description", blocks: [{ type: "text", text: p.description }] },
+      { heading: "Dutyholders", blocks: [{ type: "table", columns: ["Name", "Role", "Discipline", "Email"], widths: [2, 2, 1.2, 2.6],
+        rows: data.members.filter((m) => m.role || m.is_owner).map((m) => [
+          m.name + (m.is_firm ? " (firm)" : ""), m.role ? ROLE[m.role] : "Project owner", m.discipline ?? "—", m.email,
+        ]) }] },
+    ],
+  });
+
+  for (const [code, title, file] of [
+    ["CL-11A-PROGRAMME", "Programme and resources (reg 11A(1)-(3))", "Programme_and_resources_11A.pdf"],
+    ["PD-11G-INDIVIDUAL", "Named individual managing the principal designer role (reg 11G)", "PD_named_individual_11G.pdf"],
+    ["PD-11M-MATRIX", "Design responsibility matrix (reg 11M)", "Design_responsibility_matrix_11M.pdf"],
+  ] as const) {
+    const found = answerOf(code);
+    if (found.length) {
+      await pdf(`01_Project/${file}`, {
+        kicker: "Project record", title,
+        sections: found.map((i) => ({
+          heading: `Recorded by ${member(i.member_id)?.name ?? "—"}${i.completed_at ? `, completed ${when(i.completed_at)}` : " (not marked complete)"}`,
+          blocks: [{ type: "text", text: i.answer?.text ?? "" }],
+        })),
+      });
+    }
+  }
+
+  // Building information and other item uploads.
+  for (const d of data.documents.filter((x) => x.checklist_item_id && !x.withdrawn_at)) {
+    const item = data.items.find((i) => i.id === d.checklist_item_id);
+    const folder = item?.code === "CL-11A-INFO" ? "01_Project/Building_information" : "01_Project/Uploads";
+    addFile(`${folder}/${slug(d.file_name.replace(/\.[^.]+$/, ""), 60)}${extOf(d.file_name)}`, d);
+  }
+
+  // 02 Appointments ----------------------------------------------------------
+  const kindCount = new Map<string, number>();
+  for (const a of data.appointments) {
+    const n = (kindCount.get(a.kind) ?? 0) + 1;
+    kindCount.set(a.kind, n);
+    const suffix = a.status === "void" ? `_VOID_${n}` : a.status === "signed" ? "_signed" : "_awaiting_signatures";
+    if (a.status !== "signed") warnings.push(`${KIND[a.kind]}: ${a.status === "void" ? `voided (${a.void_reason})` : "not yet signed by all parties"}.`);
+    await pdf(`02_Appointments/${KIND_FILE[a.kind]}${suffix}.pdf`, {
+      kicker: KIND[a.kind],
+      title: a.letter_title,
+      subtitle: a.status === "signed" ? `Signed by all parties ${when(a.completed_at)}` : a.status === "void" ? `VOID: ${a.void_reason}` : "Not yet signed by all parties",
+      sections: [
+        { blocks: [{ type: "quote", text: a.letter_text }] },
+        { heading: "Signatures", blocks: [{ type: "table", columns: ["Name", "Party", "Typed name", "Signed", "IP address"], widths: [2, 1.6, 2, 2, 1.4],
+          rows: a.signatures.map((g) => [g.name, g.party, g.typed_name ?? "Not signed", when(g.signed_at), g.ip_address ?? "—"]) }] },
+        { heading: "Integrity", blocks: [{ type: "facts", rows: [
+          ["Letter SHA-256", hashLines(a.letter_sha256)], ["Template", a.template_version], ["Issued", when(a.created_at)], ["Reference", a.id],
+        ] }] },
+      ],
+    });
+  }
+
+  // 03 Competence -----------------------------------------------------------
+  const statementSections = (s: PackStatement, isFirm: boolean): Section[] => [
+    { heading: "Skills, knowledge and experience (reg 11F)", blocks: [{ type: "facts", rows: [
+      ["Skills", s.skills], ["Knowledge", s.knowledge], ["Experience", s.experience],
+    ] }] },
+    { heading: "Behaviours (reg 11Q(4))", blocks: [{ type: "facts", rows: [
+      ["Refusing non-compliant work", s.behaviour_compliance],
+      ["Cooperating with others", s.behaviour_cooperation],
+      ["Not exceeding competence", s.behaviour_limits],
+    ] }] },
+    ...(isFirm || s.organisational_capability ? [{ heading: "Organisational capability", blocks: [{ type: "text" as const, text: s.organisational_capability }] }] : []),
+    ...(s.has_serious_sanctions !== null ? [{ heading: "Serious sanctions (reg 11E(2))", blocks: [{ type: "text" as const,
+      text: s.has_serious_sanctions ? `Yes: ${s.sanctions_details}` : "None declared" }] }] : []),
+  ];
+
+  for (const m of data.members) {
+    const comp = itemsOf(m).find((i) => i.code === "ALL-11F-COMPETENCE");
+    if (!comp) continue;
+    const folder = `03_Competence/${folders.get(m.id)}`;
+    const reviews = data.reviews.filter((r) => r.checklist_item_id === comp.id);
+    const versionIds = new Set([comp.competence_statement_id, ...reviews.map((r) => data.statements.find((s) => s.version === r.statement_version && s.content_sha256 === r.statement_sha256)?.id)]);
+    const versions = data.statements.filter((s) => versionIds.has(s.id)).sort((a, b) => a.version - b.version);
+    if (!versions.length) {
+      text(`${folder}/NOT_SUBMITTED.txt`, `${m.name} has not submitted a competence statement for this project.\r\nStatus: ${comp.status}\r\n`);
+      warnings.push(`${m.name}: no competence statement submitted.`);
+      continue;
+    }
+    if (comp.status !== "complete") warnings.push(`${m.name}: competence not yet accepted (${comp.status.replace("_", " ")}).`);
+    for (const s of versions) {
+      const evidence = data.documents.filter((d) => d.statement_id === s.id);
+      const own = reviews.filter((r) => r.statement_version === s.version);
+      await pdf(`${folder}/Competence_statement_v${s.version}.pdf`, {
+        kicker: "Competence statement",
+        title: `${m.name} – version ${s.version}`,
+        subtitle: `${m.role ? ROLE[m.role] : ""}${m.is_firm ? " (firm)" : ""} · submitted ${when(s.submitted_at)}${s.id === comp.competence_statement_id ? " · current version for this project" : " · superseded"}`,
+        sections: [
+          ...statementSections(s, m.is_firm),
+          { heading: "Evidence", blocks: evidence.length ? [{ type: "table", columns: ["File", "Size", "SHA-256 (recorded at upload)"], widths: [2.4, 0.8, 4],
+            rows: evidence.map((d) => [d.file_name + (d.withdrawn_at ? ` (withdrawn: ${d.withdrawn_reason})` : ""), `${Math.ceil(d.size_bytes / 1024)} KB`, hashLines(d.sha256)]) }] : [{ type: "text", text: "No evidence files." }] },
+          { heading: "Review decisions (reg 11E)", blocks: own.length ? [{ type: "table", columns: ["Decision", "Reviewer", "When", "Note"], widths: [1.4, 1.6, 1.8, 3.2],
+            rows: own.map((r) => [r.decision === "satisfied" ? "Satisfied" : "Needs more information", r.reviewer_name, when(r.created_at), r.note || "—"]) }] : [{ type: "text", text: "Not yet reviewed." }] },
+          { heading: "Integrity", blocks: [{ type: "facts", rows: [["Statement SHA-256", hashLines(s.content_sha256)], ["Version", String(s.version)]] }] },
+        ],
+      });
+      for (const d of evidence.filter((x) => !x.withdrawn_at)) {
+        addFile(`${folder}/evidence_v${s.version}/${slug(d.file_name.replace(/\.[^.]+$/, ""), 60)}${extOf(d.file_name)}`, d);
+      }
+    }
+  }
+
+  // 04 Duty acknowledgements ------------------------------------------------
+  for (const m of data.members) {
+    const sigs = data.signatures.filter((g) => g.member_id === m.id);
+    const acks = itemsOf(m).filter((i) => i.item_type === "acknowledge");
+    if (!acks.length) continue;
+    const unsigned = acks.filter((i) => !sigs.some((g) => g.checklist_item_id === i.id));
+    if (unsigned.length) warnings.push(`${m.name}: ${unsigned.length} acknowledgement${unsigned.length === 1 ? "" : "s"} not signed.`);
+    await pdf(`04_Duty_Acknowledgements/${folders.get(m.id)}/Acknowledgements.pdf`, {
+      kicker: "Signed duty acknowledgements",
+      title: m.name,
+      subtitle: `${m.role ? ROLE[m.role] : ""} · ${sigs.length} of ${acks.length} signed`,
+      sections: [
+        ...sigs.map((g) => ({
+          heading: `${data.items.find((i) => i.id === g.checklist_item_id)?.legal_reference ?? g.template_code} – signed ${when(g.signed_at)}`,
+          blocks: [
+            { type: "quote" as const, text: g.statement },
+            { type: "facts" as const, rows: [
+              ["Typed name", g.typed_name], ["IP address", g.ip_address ?? "—"],
+              ["Wording SHA-256", hashLines(g.statement_sha256)], ["Template", `${g.template_code} v${g.template_version}`],
+            ] as [string, string][] },
+          ],
+        })),
+        ...(unsigned.length ? [{ heading: "Not yet signed", blocks: [{ type: "text" as const, text: unsigned.map((i) => `${i.legal_reference}: ${i.title}`).join("\n") }] }] : []),
+      ],
+    });
+  }
+
+  // 05 Notifications --------------------------------------------------------
+  const notify = answerOf("CL-11O-NOTIFY");
+  if (notify.length) {
+    await pdf("05_Notifications/Building_control_notification_11O.pdf", {
+      kicker: "Notification to building control (reg 11O)", title: "Principal appointments notified",
+      sections: notify.map((i) => ({ heading: `Recorded by ${member(i.member_id)?.name ?? "—"}, ${i.completed_at ? `completed ${when(i.completed_at)}` : "not marked complete"}`,
+        blocks: [{ type: "text", text: i.answer?.text ?? "" }] })),
+    });
+  }
+  if (data.changeReports.length) {
+    await pdf("05_Notifications/Change_of_competence_reports_11I.pdf", {
+      kicker: "Change of competence (reg 11I)", title: "Reports of a change in competence",
+      sections: data.changeReports.map((c) => ({ heading: `${member(c.member_id)?.name ?? "—"}, ${when(c.created_at)}`, blocks: [{ type: "text", text: c.note }] })),
+    });
+  }
+
+  // 06 Concerns -------------------------------------------------------------
+  text("06_Concerns/README.txt",
+    "Design and compliance concerns (regs 11K and 11L).\r\n\r\nThe 'raise a concern' form is not built yet in this version of Dutyholder, so no concerns are recorded here. Concerns raised by other means should be filed separately.\r\n");
+
+  // 07 Handover -------------------------------------------------------------
+  const handover = answerOf("PD-11M-HANDOVER");
+  if (handover.length) {
+    await pdf("07_Handover/Principal_designer_handover_11M5b.pdf", {
+      kicker: "Principal designer handover (reg 11M(5)(b))", title: "Arrangements for planning, managing and monitoring the design work",
+      sections: handover.map((i) => ({ heading: `By ${member(i.member_id)?.name ?? "—"}, ${i.completed_at ? when(i.completed_at) : "draft"}`, blocks: [{ type: "text", text: i.answer?.text ?? "" }] })),
+    });
+  } else {
+    text("07_Handover/README.txt", "The principal designer's handover document (reg 11M(5)(b)) has not been recorded yet.\r\n");
+  }
+
+  // 99 Audit trail ----------------------------------------------------------
+  entries.set("99_Audit_Trail.csv", new TextEncoder().encode(toCsv(
+    ["When (UTC)", "Who", "Action", "Record type", "Record id", "IP address", "Details"],
+    data.audit.map((a) => [a.occurred_at, a.actor, a.action, a.entity_type, a.entity_id, a.ip_address, a.details]),
+  )));
+
+  // 00 Index (last, so it can list every other file's fingerprint) ---------
+  const manifest = [...entries.entries()]
+    .map(([path, bytes]) => ({ path, size: bytes.length, sha256: sha256(bytes) }))
+    .sort((a, b) => a.path.localeCompare(b.path));
+  const statusRows = data.members.filter((m) => itemsOf(m).length).map((m) => {
+    const items = itemsOf(m);
+    const count = (c: string) => items.filter((i) => RAG(i.status) === c).length;
+    return [m.name, m.role ? ROLE[m.role] : "Owner", String(count("Green")), String(count("Amber")), String(count("Red"))];
+  });
+  await pdf("00_Index.pdf", {
+    kicker: "Evidence pack – index",
+    title: p.name,
+    subtitle: `Building Regulations 2010, Part 2A dutyholder records · generated ${when(data.generatedAt.toISOString())}`,
+    sections: [
+      ...(warnings.length ? [{ heading: "Points to note", blocks: warnings.map((w) => ({ type: "warning" as const, text: w })) }] : []),
+      { heading: "Status (red / amber / green)", blocks: [{ type: "table", columns: ["Person", "Role", "Green", "Amber", "Red"], widths: [2.4, 2, 0.8, 0.8, 0.8], rows: statusRows }] },
+      { heading: "Contents", blocks: [
+        { type: "text", text: "Each file's SHA-256 fingerprint is listed so anyone can check it has not been changed since this pack was generated. Evidence files were re-checked against the fingerprint recorded when they were uploaded." },
+        { type: "table", columns: ["File", "Size", "SHA-256"], widths: [3.6, 0.7, 3.8], rows: manifest.map((f) => [pathLines(f.path), `${Math.max(1, Math.ceil(f.size / 1024))} KB`, hashLines(f.sha256)]) },
+      ] },
+    ],
+  });
+
+  const prefixed = new Map([...entries.entries()].map(([path, bytes]) => [`${ref}/${path}`, bytes]));
+  return { ref, entries: prefixed, manifest, warnings };
+
+  // Adds an original uploaded file, after checking its fingerprint.
+  function addFile(path: string, d: { storage_path: string; sha256: string; file_name: string }) {
+    const bytes = data.files.get(d.storage_path);
+    if (!bytes) {
+      warnings.push(`Missing file: ${d.file_name} could not be retrieved from storage.`);
+      return;
+    }
+    if (sha256(bytes) !== d.sha256) {
+      warnings.push(`FINGERPRINT MISMATCH: ${d.file_name} does not match the SHA-256 recorded at upload.`);
+    }
+    let unique = path;
+    for (let n = 2; entries.has(unique); n++) unique = path.replace(/(\.[^./]+)?$/, `_${n}$1`);
+    entries.set(unique, bytes);
+  }
+}
+
+function extOf(name: string): string {
+  const m = /\.[A-Za-z0-9]{1,6}$/.exec(name);
+  return m ? m[0].toLowerCase() : "";
+}
+
+export { csvCell };

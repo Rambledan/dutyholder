@@ -102,7 +102,10 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
             <p className="text-xs text-amber-700">Project clock is {project.clock_offset_days} days ahead: {shortDate(now)}</p>
           )}
         </div>
-        <Link href={`/projects/${id}`} className="text-sm text-muted-foreground hover:underline">Project details</Link>
+        <div className="flex gap-4 text-sm">
+          <Link href={`/projects/${id}/exports`} className="text-muted-foreground hover:underline">Evidence pack</Link>
+          <Link href={`/projects/${id}`} className="text-muted-foreground hover:underline">Project details</Link>
+        </div>
       </header>
 
       {project.is_demo && (

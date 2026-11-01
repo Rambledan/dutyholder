@@ -542,6 +542,65 @@ export type Database = {
         }
         Relationships: []
       }
+      exports: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error: string | null
+          expires_at: string | null
+          file_count: number | null
+          file_name: string | null
+          id: string
+          project_id: string
+          requested_by: string
+          sha256: string | null
+          size_bytes: number | null
+          status: string
+          storage_path: string | null
+          warnings: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          expires_at?: string | null
+          file_count?: number | null
+          file_name?: string | null
+          id?: string
+          project_id: string
+          requested_by: string
+          sha256?: string | null
+          size_bytes?: number | null
+          status?: string
+          storage_path?: string | null
+          warnings?: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          expires_at?: string | null
+          file_count?: number | null
+          file_name?: string | null
+          id?: string
+          project_id?: string
+          requested_by?: string
+          sha256?: string | null
+          size_bytes?: number | null
+          status?: string
+          storage_path?: string | null
+          warnings?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invites: {
         Row: {
           created_at: string
@@ -1088,6 +1147,20 @@ export type Database = {
         }
         Returns: number
       }
+      finish_export: {
+        Args: {
+          p_error: string
+          p_export_id: string
+          p_file_count: number
+          p_file_name: string
+          p_path: string
+          p_sha256: string
+          p_size: number
+          p_status: string
+          p_warnings: number
+        }
+        Returns: undefined
+      }
       finish_manual_chase: {
         Args: { p_detail: string; p_reminder_id: string; p_sent: boolean }
         Returns: undefined
@@ -1140,6 +1213,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_export_download: {
+        Args: { p_export_id: string }
+        Returns: undefined
+      }
       record_invite_email: {
         Args: { p_detail: string; p_member_id: string; p_sent: boolean }
         Returns: undefined
@@ -1166,6 +1243,7 @@ export type Database = {
         Args: { p_note: string; p_project_id: string }
         Returns: string
       }
+      request_export: { Args: { p_project_id: string }; Returns: string }
       request_ip: { Args: never; Returns: unknown }
       review_competence: {
         Args: {

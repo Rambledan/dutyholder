@@ -1,4 +1,7 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Font, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+
+// Never hyphenate: a hyphen inside the document fingerprint would corrupt it.
+Font.registerHyphenationCallback((word) => [word]);
 
 const styles = StyleSheet.create({
   page: { padding: 48, fontSize: 10.5, fontFamily: "Helvetica", lineHeight: 1.45, color: "#171717" },

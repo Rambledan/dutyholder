@@ -76,6 +76,21 @@ the full plan and `CLAUDE.md` for the working rules.
   are invisible to the real cron job, so nobody fictional is ever emailed
 - Line chart of items complete by simulated day, with a table view
 
+## Phase 7: what's built
+
+- **Evidence pack** (owner only, from the dashboard or project page): built in
+  the background, zipped in the PLAN.md folder structure with
+  `00_Index.pdf` (status, warnings, and every file's SHA-256) and
+  `99_Audit_Trail.csv` (formula-safe)
+- PDFs for the project summary, appointment letters, each competence
+  statement version (with review decisions), signed acknowledgements,
+  notifications and handover; original evidence files included byte for byte
+  and re-fingerprinted against what was recorded at upload
+- Stored in a private `exports` bucket; downloadable by the owner after 2FA
+  for 24 hours via a 60-second link; every download logged
+- The export job (`src/lib/evidence/job.ts`) is the only other user of the
+  secret key, as PLAN.md allows
+
 ## First-time setup (dev project)
 
 1. **Supabase dashboard → your `dutyholder-dev` project:**

@@ -96,6 +96,11 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
             </Link>
           )}
           {isOwner && (
+            <Link href={`/projects/${id}/exports`} className={buttonVariants({ variant: "outline" })}>
+              Evidence pack
+            </Link>
+          )}
+          {isOwner && (
             <Link href={`/projects/${id}/edit`} className={buttonVariants({ variant: "outline" })}>
               Edit set-up
             </Link>
