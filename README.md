@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dutyholder
 
-## Getting Started
+Secure web app for Building Regulations Part 2A dutyholder appointments,
+duty acknowledgements and competence evidence (England). See `PLAN.md` for
+the full plan and `CLAUDE.md` for the working rules.
 
-First, run the development server:
+## Phase 1: what's built
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Invite-only sign-up (single-use links that expire after 7 days)
+- Email + password login
+- Mandatory two-factor (authenticator app) with 10 one-time recovery codes
+- A gatekeeper (`src/proxy.ts`) that blocks every page until 2FA is done,
+  and signs people out after 12 hours of inactivity
+- `profiles` table with RLS: you can only see your own row, only after 2FA
+- Append-only `audit_log` recording sign-ups and 2FA events
+
+## First-time setup (dev project)
+
+1. **Supabase dashboard → your `dutyholder-dev` project:**
+   - *Authentication → Sign In / Providers → Email*: turn **Confirm email** off
+     (the invite link already proves the address) and set minimum password
+     length to **12**.
+   - *Authentication → Multi-Factor*: check **TOTP (App Authenticator)** is enabled.
+2. Copy `.env.example` to `.env.local` and fill in the values it describes.
+3. Apply the database migrations:
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref YOUR_DEV_PROJECT_REF
+   npx supabase db push
+   ```
+4. Run the tests (unit tests + database access-rule tests):
+   ```bash
+   npm test
+   ```
+5. Start the app:
+   ```bash
+   npm run dev
+   ```
+
+## Creating an invite (phase 1)
+
+Until the team screen arrives in phase 3, create invites in the Supabase
+dashboard's **SQL Editor**:
+
+```sql
+select 'http://localhost:3000/signup?token=' || public.create_invite('you@example.com');
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copy the link it returns and open it. Each link works once, for that email only.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Useful commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Run the site locally at http://localhost:3000 |
+| `npm test` | Run all tests (database tests need `DEV_DATABASE_URL`) |
+| `npm run test:unit` | Run only the tests that don't need a database |
+| `npm run typecheck` | Check the TypeScript for mistakes |
+| `npm run lint` | Check code style |
+| `npx supabase db push` | Apply new migration files to the linked database |
