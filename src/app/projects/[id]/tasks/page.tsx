@@ -5,6 +5,7 @@ import { PageShell } from "@/components/projects/page-shell";
 import { ProgressBar } from "@/components/tasks/progress-bar";
 import { requireAal2 } from "@/lib/auth/server";
 import { ITEM_TYPE_LABELS, STATUS_LABELS, rag } from "@/lib/labels";
+import { KIND_LABELS, PARTY_LABELS } from "@/lib/letters";
 import { loadMyTasks, nextTask, progress } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,27 @@ async function Tasks({ params }: { params: PageProps<"/projects/[id]/tasks">["pa
   const { done, total } = progress(tasks);
   const next = nextTask(tasks);
 
+  // Letters this person must sign as appointee (they have no checklist item
+  // for being appointed, so list them here).
+  const myMemberIds = [...new Set(tasks.map((t) => t.memberId))];
+  const { data: memberRows } = await supabase.from("project_members").select("id")
+    .eq("project_id", id).eq("user_id", userId).is("removed_at", null);
+  const allMine = [...new Set([...myMemberIds, ...(memberRows ?? []).map((m) => m.id)])];
+  const { data: mySignatory } = allMine.length
+    ? await supabase.from("appointment_signatories")
+        .select("appointment_id, member_id, party, appointments!inner(id, kind, status, project_id)")
+        .in("member_id", allMine).eq("appointments.status", "awaiting_signatures").eq("appointments.project_id", id)
+    : { data: [] };
+  const { data: mySigned } = mySignatory?.length
+    ? await supabase.from("appointment_signatures").select("appointment_id, member_id, party")
+        .in("appointment_id", mySignatory.map((s) => s.appointment_id))
+    : { data: [] };
+  const toSign = (mySignatory ?? []).filter(
+    (s) => s.party === "appointee" &&
+      !mySigned?.some((g) => g.appointment_id === s.appointment_id && g.member_id === s.member_id && g.party === s.party),
+  );
+  const hasCompetence = tasks.some((t) => t.code === "ALL-11F-COMPETENCE");
+
   return (
     <div className="space-y-6">
       <header className="space-y-1">
@@ -45,6 +67,18 @@ async function Tasks({ params }: { params: PageProps<"/projects/[id]/tasks">["pa
       </header>
 
       <ProgressBar done={done} total={total} />
+
+      {toSign.length > 0 && (
+        <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
+          <h2 className="text-sm font-semibold">Waiting for your signature</h2>
+          {toSign.map((s) => (
+            <Link key={s.appointment_id} href={`/projects/${id}/appointments/${s.appointment_id}`}
+              className={cn(buttonVariants({ size: "lg" }), "h-auto min-h-10 w-full whitespace-normal py-2 text-left sm:w-auto")}>
+              {KIND_LABELS[s.appointments.kind]} (as {PARTY_LABELS[s.party].toLowerCase()}) →
+            </Link>
+          ))}
+        </div>
+      )}
 
       {next ? (
         <Link href={`/projects/${id}/tasks/${next.id}`} className={cn(buttonVariants({ size: "lg" }), "h-auto min-h-10 w-full whitespace-normal py-2 text-left sm:w-auto")}>
@@ -84,9 +118,14 @@ async function Tasks({ params }: { params: PageProps<"/projects/[id]/tasks">["pa
         })}
       </ul>
 
-      <Link href={`/projects/${id}`} className="inline-block text-sm text-muted-foreground hover:underline">
-        Project details and team
-      </Link>
+      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+        <Link href={`/projects/${id}`} className="text-muted-foreground hover:underline">Project details and team</Link>
+        {hasCompetence && (
+          <Link href={`/projects/${id}/report-change`} className="text-muted-foreground hover:underline">
+            Report a change in your competence
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

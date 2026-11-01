@@ -14,7 +14,7 @@ export type Task = {
   itemType: ItemType;
   sortOrder: number;
   memberId: string;
-  // Appointments to sign and competence reviews arrive in phase 4.
+  // Every task type can be opened since phase 4.
   available: boolean;
 };
 
@@ -48,7 +48,7 @@ export async function loadMyTasks(supabase: SupabaseClient<Database>, projectId:
       itemType: i.duty_templates!.item_type,
       sortOrder: i.duty_templates!.sort_order,
       memberId: i.member_id,
-      available: !["sign", "review"].includes(i.duty_templates!.item_type),
+      available: true,
     }))
     .sort((a, b) => a.sortOrder - b.sortOrder);
 

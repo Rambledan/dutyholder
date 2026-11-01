@@ -14,6 +14,166 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_signatories: {
+        Row: {
+          appointment_id: string
+          member_id: string
+          party: string
+        }
+        Insert: {
+          appointment_id: string
+          member_id: string
+          party: string
+        }
+        Update: {
+          appointment_id?: string
+          member_id?: string
+          party?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_signatories_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_signatories_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointment_signatures: {
+        Row: {
+          appointment_id: string
+          id: string
+          ip_address: unknown
+          letter_sha256: string
+          member_id: string
+          party: string
+          signed_at: string
+          typed_name: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          appointment_id: string
+          id?: string
+          ip_address?: unknown
+          letter_sha256: string
+          member_id: string
+          party: string
+          signed_at?: string
+          typed_name: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          appointment_id?: string
+          id?: string
+          ip_address?: unknown
+          letter_sha256?: string
+          member_id?: string
+          party?: string
+          signed_at?: string
+          typed_name?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_signatures_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_signatures_appointment_id_member_id_party_fkey"
+            columns: ["appointment_id", "member_id", "party"]
+            isOneToOne: true
+            referencedRelation: "appointment_signatories"
+            referencedColumns: ["appointment_id", "member_id", "party"]
+          },
+          {
+            foreignKeyName: "appointment_signatures_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointments: {
+        Row: {
+          appointee_member_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+          kind: Database["public"]["Enums"]["appointment_kind"]
+          letter_sha256: string
+          letter_text: string
+          letter_title: string
+          project_id: string
+          status: string
+          template_version: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          appointee_member_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          kind: Database["public"]["Enums"]["appointment_kind"]
+          letter_sha256: string
+          letter_text: string
+          letter_title: string
+          project_id: string
+          status?: string
+          template_version: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          appointee_member_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["appointment_kind"]
+          letter_sha256?: string
+          letter_text?: string
+          letter_title?: string
+          project_id?: string
+          status?: string
+          template_version?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_appointee_member_id_fkey"
+            columns: ["appointee_member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -123,6 +283,51 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "duty_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competence_change_reports: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: unknown
+          member_id: string
+          note: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          member_id: string
+          note: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          member_id?: string
+          note?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competence_change_reports_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competence_change_reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -534,6 +739,80 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          checklist_item_id: string
+          competence_statement_id: string
+          created_at: string
+          decision: Database["public"]["Enums"]["review_decision"]
+          id: string
+          ip_address: unknown
+          member_id: string
+          note: string
+          project_id: string
+          reviewer_id: string
+          statement_sha256: string
+          statement_version: number
+        }
+        Insert: {
+          checklist_item_id: string
+          competence_statement_id: string
+          created_at?: string
+          decision: Database["public"]["Enums"]["review_decision"]
+          id?: string
+          ip_address?: unknown
+          member_id: string
+          note?: string
+          project_id: string
+          reviewer_id: string
+          statement_sha256: string
+          statement_version: number
+        }
+        Update: {
+          checklist_item_id?: string
+          competence_statement_id?: string
+          created_at?: string
+          decision?: Database["public"]["Enums"]["review_decision"]
+          id?: string
+          ip_address?: unknown
+          member_id?: string
+          note?: string
+          project_id?: string
+          reviewer_id?: string
+          statement_sha256?: string
+          statement_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_competence_statement_id_fkey"
+            columns: ["competence_statement_id"]
+            isOneToOne: false
+            referencedRelation: "competence_statements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       signatures: {
         Row: {
           checklist_item_id: string
@@ -620,6 +899,10 @@ export type Database = {
         }
         Returns: string
       }
+      appointment_item_code: {
+        Args: { p_kind: Database["public"]["Enums"]["appointment_kind"] }
+        Returns: string
+      }
       assert_my_item: {
         Args: { p_item_id: string }
         Returns: {
@@ -691,11 +974,33 @@ export type Database = {
       is_aal2: { Args: never; Returns: boolean }
       is_project_member: { Args: { p_project_id: string }; Returns: boolean }
       is_project_owner: { Args: { p_project_id: string }; Returns: boolean }
+      is_project_reviewer: { Args: { p_project_id: string }; Returns: boolean }
       normalise_name: { Args: { p_name: string }; Returns: string }
       normalise_recovery_code: { Args: { p_code: string }; Returns: string }
       owns_project_using_statement: {
         Args: { p_statement_id: string }
         Returns: boolean
+      }
+      prepare_appointment: {
+        Args: {
+          p_appointee_member_id: string
+          p_kind: Database["public"]["Enums"]["appointment_kind"]
+          p_letter_text: string
+          p_letter_title: string
+          p_project_id: string
+          p_template_version: string
+        }
+        Returns: string
+      }
+      record_email: {
+        Args: {
+          p_detail: string
+          p_kind: string
+          p_member_id: string
+          p_project_id: string
+          p_sent: boolean
+        }
+        Returns: undefined
       }
       record_invite_email: {
         Args: { p_detail: string; p_member_id: string; p_sent: boolean }
@@ -703,6 +1008,10 @@ export type Database = {
       }
       record_mfa_enrolled: { Args: never; Returns: undefined }
       recovery_codes_remaining: { Args: never; Returns: number }
+      refresh_review_items: {
+        Args: { p_project_id: string }
+        Returns: undefined
+      }
       register_document: {
         Args: {
           p_file_name: string
@@ -714,7 +1023,19 @@ export type Database = {
         }
         Returns: string
       }
+      report_competence_change: {
+        Args: { p_note: string; p_project_id: string }
+        Returns: string
+      }
       request_ip: { Args: never; Returns: unknown }
+      review_competence: {
+        Args: {
+          p_decision: Database["public"]["Enums"]["review_decision"]
+          p_item_id: string
+          p_note: string
+        }
+        Returns: string
+      }
       save_item_answer: {
         Args: { p_item_id: string; p_text: string }
         Returns: undefined
@@ -725,9 +1046,22 @@ export type Database = {
         Args: { p_item_id: string; p_typed_name: string; p_user_agent?: string }
         Returns: string
       }
+      sign_appointment: {
+        Args: {
+          p_appointment_id: string
+          p_party: string
+          p_typed_name: string
+          p_user_agent?: string
+        }
+        Returns: string
+      }
       start_competence_draft: { Args: never; Returns: string }
       submit_competence: { Args: { p_item_id: string }; Returns: string }
       use_recovery_code: { Args: { p_code: string }; Returns: boolean }
+      void_appointment: {
+        Args: { p_appointment_id: string; p_reason: string }
+        Returns: undefined
+      }
       withdraw_document: {
         Args: { p_document_id: string; p_reason: string }
         Returns: undefined
@@ -754,6 +1088,11 @@ export type Database = {
       }
     }
     Enums: {
+      appointment_kind:
+        | "pd_appointment"
+        | "pc_appointment"
+        | "lead_designer_agreement"
+        | "cdm_certification"
       dutyholder_role:
         | "client"
         | "principal_designer"
@@ -769,6 +1108,7 @@ export type Database = {
       item_type: "acknowledge" | "upload" | "form" | "sign" | "review"
       jurisdiction: "england" | "wales"
       project_status: "setup" | "active" | "complete" | "archived"
+      review_decision: "satisfied" | "needs_info"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -896,6 +1236,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      appointment_kind: [
+        "pd_appointment",
+        "pc_appointment",
+        "lead_designer_agreement",
+        "cdm_certification",
+      ],
       dutyholder_role: [
         "client",
         "principal_designer",
@@ -913,6 +1259,7 @@ export const Constants = {
       item_type: ["acknowledge", "upload", "form", "sign", "review"],
       jurisdiction: ["england", "wales"],
       project_status: ["setup", "active", "complete", "archived"],
+      review_decision: ["satisfied", "needs_info"],
     },
   },
 } as const

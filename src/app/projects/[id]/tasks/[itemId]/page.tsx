@@ -1,17 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageShell } from "@/components/projects/page-shell";
 import { AcknowledgeForm } from "@/components/tasks/acknowledge-form";
-import { CompetenceForm, StatementView, type Statement } from "@/components/tasks/competence-form";
+import { CompetenceForm, StatementView } from "@/components/tasks/competence-form";
 import type { FileRow } from "@/components/tasks/file-list";
 import { SimpleForm } from "@/components/tasks/simple-form";
 import { UploadTask } from "@/components/tasks/upload-task";
 import { requireAal2 } from "@/lib/auth/server";
 import { STATUS_LABELS } from "@/lib/labels";
-import type { Database } from "@/lib/supabase/database.types";
+import { loadStatement } from "@/lib/statements";
+import { KIND_BY_CODE, KIND_LABELS } from "@/lib/letters";
 import { loadMyTasks, nextTask } from "@/lib/tasks";
+import { buttonVariants } from "@/components/ui/button";
 
 export const metadata = { title: "Task · Dutyholder" };
 
@@ -33,34 +34,6 @@ const FORM_PROMPTS: Record<string, string> = {
   "PD-11M-MATRIX": "List each part of the design and the designer responsible for it.",
   "PD-11M-HANDOVER": "Explain the arrangements you made to plan, manage and monitor the design work.",
 };
-
-async function loadStatement(supabase: SupabaseClient<Database>, id: string): Promise<Statement | null> {
-  const [{ data: s }, { data: links }] = await Promise.all([
-    supabase.from("competence_statements").select("*").eq("id", id).maybeSingle(),
-    supabase.from("competence_evidence")
-      .select("documents(id, file_name, size_bytes, sha256, withdrawn_at, created_at)")
-      .eq("statement_id", id),
-  ]);
-  if (!s) return null;
-  const files: FileRow[] = (links ?? [])
-    .map((l) => l.documents)
-    .filter((d): d is NonNullable<typeof d> => Boolean(d) && !d!.withdrawn_at)
-    .map((d) => ({ id: d.id, fileName: d.file_name, sizeBytes: d.size_bytes, sha256: d.sha256, createdAt: d.created_at }));
-  return {
-    skills: s.skills,
-    knowledge: s.knowledge,
-    experience: s.experience,
-    behaviour_compliance: s.behaviour_compliance,
-    behaviour_cooperation: s.behaviour_cooperation,
-    behaviour_limits: s.behaviour_limits,
-    organisational_capability: s.organisational_capability,
-    has_serious_sanctions: s.has_serious_sanctions,
-    sanctions_details: s.sanctions_details,
-    version: s.version,
-    submittedAt: s.submitted_at,
-    files,
-  };
-}
 
 async function TaskView({ params }: { params: Params }) {
   const { supabase, userId } = await requireAal2();
@@ -98,14 +71,14 @@ async function TaskView({ params }: { params: Params }) {
       body = <AcknowledgeForm projectId={projectId} itemId={itemId} fullName={profile?.full_name ?? ""} nextHref={nextHref} />;
     }
   } else if (task.code === "ALL-11F-COMPETENCE") {
-    if (item.competence_statement_id) {
+    if (item.competence_statement_id && (task.status === "submitted" || task.status === "complete")) {
       const linked = await loadStatement(supabase, item.competence_statement_id);
       body = linked && (
         <div className="space-y-4">
           <p className="text-sm">
             Version {linked.version} submitted
             {linked.submittedAt && ` on ${new Date(linked.submittedAt).toLocaleDateString("en-GB", { dateStyle: "long" })}`}.
-            It&apos;s waiting for review.
+            {task.status === "complete" ? " Reviewed and accepted." : " It's waiting for review."}
           </p>
           <StatementView statement={linked} isFirm={Boolean(member?.is_firm)} projectId={projectId} />
         </div>
@@ -120,11 +93,90 @@ async function TaskView({ params }: { params: Params }) {
         draftRow ? loadStatement(supabase, draftRow.id) : null,
         latestRow ? loadStatement(supabase, latestRow.id) : null,
       ]);
+      // After "needs more info" (or a reported change) show why, and insist
+      // on an updated version.
+      const { data: lastReview } = task.status === "needs_info"
+        ? await supabase.from("reviews").select("note, created_at").eq("checklist_item_id", itemId)
+            .eq("decision", "needs_info").order("created_at", { ascending: false }).limit(1).maybeSingle()
+        : { data: null };
       body = (
-        <CompetenceForm projectId={projectId} itemId={itemId} userId={userId} isFirm={Boolean(member?.is_firm)}
-          isHigherRisk={project.is_higher_risk} draft={draft} latestSubmitted={latestSubmitted} nextHref={nextHref} />
+        <div className="space-y-4">
+          {task.status === "needs_info" && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+              <p className="font-medium">More information needed</p>
+              <p className="whitespace-pre-line">
+                {lastReview?.note ?? "You reported a change in your competence. Please update your statement."}
+              </p>
+            </div>
+          )}
+          <CompetenceForm projectId={projectId} itemId={itemId} userId={userId} isFirm={Boolean(member?.is_firm)}
+            isHigherRisk={project.is_higher_risk} draft={draft} latestSubmitted={latestSubmitted} nextHref={nextHref}
+            mustRevise={task.status === "needs_info"} />
+        </div>
       );
     }
+  } else if (task.itemType === "sign") {
+    const kind = KIND_BY_CODE[task.code];
+    const [{ data: appointment }, { data: isOwner }] = await Promise.all([
+      supabase.from("appointments").select("id, status, letter_title").eq("project_id", projectId).eq("kind", kind)
+        .neq("status", "void").maybeSingle(),
+      supabase.rpc("is_project_owner", { p_project_id: projectId }),
+    ]);
+    body = appointment ? (
+      <div className="space-y-3 text-sm">
+        <p>
+          <strong>{appointment.letter_title}</strong>:{" "}
+          {appointment.status === "signed" ? "signed by all parties." : "waiting for signatures."}
+        </p>
+        <Link href={`/projects/${projectId}/appointments/${appointment.id}`} className={buttonVariants({ size: "lg" })}>
+          {appointment.status === "signed" ? "View the signed letter" : "Read and sign"}
+        </Link>
+      </div>
+    ) : isOwner ? (
+      <div className="space-y-3 text-sm">
+        <p>The {KIND_LABELS[kind].toLowerCase()} hasn&apos;t been issued yet.</p>
+        <Link href={`/projects/${projectId}/appointments/new?kind=${kind}`} className={buttonVariants({ size: "lg" })}>
+          Prepare it now
+        </Link>
+      </div>
+    ) : (
+      <p className="text-sm text-muted-foreground">
+        Waiting for the project owner to prepare the {KIND_LABELS[kind].toLowerCase()}. You&apos;ll be emailed when
+        it&apos;s ready to sign.
+      </p>
+    );
+  } else if (task.itemType === "review") {
+    const roles: Record<string, string[]> = {
+      "CL-11E-REVIEW-PD": ["principal_designer"],
+      "CL-11E-REVIEW-PC": ["principal_contractor"],
+      "CL-11E-REVIEW-ENGAGED": ["designer", "contractor"],
+    };
+    const { data: rows } = await supabase.from("checklist_items")
+      .select("id, status, project_members!inner(user_id, email, display_name, role)")
+      .eq("project_id", projectId).eq("template_code", "ALL-11F-COMPETENCE").is("withdrawn_at", null)
+      .in("project_members.role", (roles[task.code] ?? []) as ("designer" | "contractor" | "principal_designer" | "principal_contractor")[]);
+    const ids = (rows ?? []).map((r) => r.project_members.user_id).filter((x): x is string => Boolean(x));
+    const { data: names } = ids.length ? await supabase.from("profiles").select("id, full_name").in("id", ids) : { data: [] };
+    body = rows?.length ? (
+      <ul className="divide-y rounded-lg border text-sm">
+        {rows.map((r) => {
+          const m = r.project_members;
+          const name = names?.find((n) => n.id === m.user_id)?.full_name || m.display_name || m.email;
+          return (
+            <li key={r.id}>
+              <Link href={`/projects/${projectId}/review/${r.id}`} className="flex justify-between gap-2 p-3 hover:bg-muted/50">
+                <span className="font-medium">{name}</span>
+                <span className="text-muted-foreground">
+                  {r.status === "submitted" ? "Ready to review →" : STATUS_LABELS[r.status]}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    ) : (
+      <p className="text-sm text-muted-foreground">Nobody to review yet. This completes itself once everyone is reviewed.</p>
+    );
   } else if (task.itemType === "form") {
     const text = (item.answer as { text?: string } | null)?.text ?? "";
     body = done ? (

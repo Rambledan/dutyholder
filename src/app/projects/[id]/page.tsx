@@ -11,6 +11,7 @@ import { requireAal2 } from "@/lib/auth/server";
 import { DISCIPLINES, ITEM_TYPE_LABELS, STATUS_LABELS, rag, roleLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { addMember, inviteMember } from "../actions";
+import { KIND_LABELS, type AppointmentKind } from "@/lib/letters";
 
 export const metadata = { title: "Project · Dutyholder" };
 
@@ -57,11 +58,23 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
   const nameOf = (m: (typeof members)[number]) =>
     profiles?.find((p) => p.id === m.user_id)?.full_name || m.display_name || m.email;
 
-  const activeItems = (items ?? []).filter((i) => !i.withdrawn_at);
+  const allActiveItems = (items ?? []).filter((i) => !i.withdrawn_at);
   const myMemberIds = members.filter((m) => m.user_id === userId).map((m) => m.id);
-  const myItems = activeItems.filter((i) => myMemberIds.includes(i.member_id));
+  const myItems = allActiveItems.filter((i) => myMemberIds.includes(i.member_id));
+  // Reviewers can also see others' competence items; the checklist section
+  // still shows only your own unless you're the owner.
+  const activeItems = isOwner ? allActiveItems : myItems;
+  const competenceItems = allActiveItems.filter((i) => i.duty_templates?.code === "ALL-11F-COMPETENCE");
+
+  const [{ data: isReviewer }, { data: appointments }] = await Promise.all([
+    supabase.rpc("is_project_reviewer", { p_project_id: id }),
+    supabase.from("appointments").select("id, kind, status, created_at").eq("project_id", id).order("created_at"),
+  ]);
+  const kinds: AppointmentKind[] = project.expected_contractors > 1
+    ? ["pd_appointment", "pc_appointment", ...(project.cdm_pd_certified ? ["cdm_certification" as const] : [])]
+    : ["lead_designer_agreement"];
   const myDone = myItems.filter((i) => i.status === "complete" || i.status === "submitted").length;
-  const withdrawnCount = (items ?? []).length - activeItems.length;
+  const withdrawnCount = isOwner ? (items ?? []).length - allActiveItems.length : 0;
   const visibleMembers = members.filter((m) => activeItems.some((i) => i.member_id === m.id));
 
   return (
@@ -159,6 +172,71 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Appointments</CardTitle>
+          <CardDescription>Written appointments and agreements under reg 11D. Everyone on the project can see these.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y rounded-lg border text-sm">
+            {kinds.map((kind) => {
+              const live = appointments?.find((a) => a.kind === kind && a.status !== "void");
+              const voided = appointments?.filter((a) => a.kind === kind && a.status === "void").length ?? 0;
+              return (
+                <li key={kind} className="flex flex-wrap items-center justify-between gap-2 p-3">
+                  <span>
+                    <span className="font-medium">{KIND_LABELS[kind]}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {live ? (live.status === "signed" ? "Signed by all parties" : "Waiting for signatures") : "Not issued yet"}
+                      {voided > 0 && ` · ${voided} voided`}
+                    </span>
+                  </span>
+                  {live ? (
+                    <Link href={`/projects/${id}/appointments/${live.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                      Open
+                    </Link>
+                  ) : isOwner ? (
+                    <Link href={`/projects/${id}/appointments/new?kind=${kind}`} className={buttonVariants({ size: "sm" })}>
+                      Prepare
+                    </Link>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      </Card>
+
+      {isReviewer && competenceItems.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Competence reviews</CardTitle>
+            <CardDescription>Review each person&apos;s competence statement and evidence (reg 11E).</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y rounded-lg border text-sm">
+              {competenceItems.map((i) => {
+                const m = members.find((x) => x.id === i.member_id);
+                if (!m) return null;
+                return (
+                  <li key={i.id}>
+                    <Link href={`/projects/${id}/review/${i.id}`} className="flex flex-wrap items-center justify-between gap-2 p-3 hover:bg-muted/50">
+                      <span>
+                        <span className="font-medium">{nameOf(m)}</span>
+                        <span className="text-muted-foreground"> · {roleLabel(m.role)}</span>
+                      </span>
+                      <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", RAG_CLASSES[rag(i.status)])}>
+                        {i.status === "submitted" ? "Ready to review" : STATUS_LABELS[i.status]}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       <section className="space-y-4">
         <div>

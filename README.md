@@ -37,6 +37,20 @@ the full plan and `CLAUDE.md` for the working rules.
   (SHA-256); files are withdrawn with a reason, never deleted
 - Simple form and upload tasks; appointments and reviews wait for phase 4
 
+## Phase 4: what's built
+
+- Competence reviews by the owner or whoever holds the client's "check
+  competence" duty: Satisfied / Needs more info with a note, recording the
+  fingerprint of the exact version reviewed; the client's review duties tick
+  themselves off; "needs more info" requires a new version
+- Appointment letters (PD and PC appointments, lead designer agreement, CDM
+  certification) from draft templates in `src/lib/letters.ts`: frozen and
+  fingerprinted when issued, signed by every party with a typed name, void
+  with a reason, downloadable as PDF with a signature block
+- "Report a change" (reg 11I): records the report, sends competence back for
+  review and notifies the owner
+- Notification emails (when Resend is set up), each logged in the audit trail
+
 ## First-time setup (dev project)
 
 1. **Supabase dashboard → your `dutyholder-dev` project:**

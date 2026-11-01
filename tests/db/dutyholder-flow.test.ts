@@ -153,7 +153,7 @@ describe("competence statements", () => {
         .toMatch(/organisational capability/);
     }));
 
-  it("shows a submitted statement to that project's owner only, and never a draft", () =>
+  it("shows a submitted statement to that project's reviewers (owner and client) only, and never a draft", () =>
     inTransaction(async (db) => {
       const { owner, client, designer, projectId } = await team(db);
       const stranger = await signUpUser(db, "stranger");
@@ -170,7 +170,8 @@ describe("competence statements", () => {
       await as(db, aal2(designer.id), () => db.query("select public.submit_competence($1)", [item]));
       expect(await visibleTo(designer.id)).toBe(1);
       expect(await visibleTo(owner.id)).toBe(1);
-      expect(await visibleTo(client.id)).toBe(0);
+      // Phase 4: the client reviews competence, so can read it once submitted.
+      expect(await visibleTo(client.id)).toBe(1);
       expect(await visibleTo(stranger.id)).toBe(0);
     }));
 
@@ -213,7 +214,7 @@ describe("uploads", () => {
           [`${designer.id}/half.pdf`, designer.id])));
     }));
 
-  it("registers evidence against the draft and shows it to the owner only after submission", () =>
+  it("registers evidence against the draft and shows it to reviewers only after submission", () =>
     inTransaction(async (db) => {
       const { owner, client, designer, projectId } = await team(db);
       const path = await uploadObject(db, designer.id);
@@ -226,6 +227,7 @@ describe("uploads", () => {
       });
       expect(await ownerSees(designer.id)).toEqual({ doc: 1, file: 1 });
       expect(await ownerSees(owner.id)).toEqual({ doc: 0, file: 0 });
+      expect(await ownerSees(client.id)).toEqual({ doc: 0, file: 0 });
 
       await as(db, aal2(designer.id), () =>
         db.query(`update public.competence_statements set skills = 'a', knowledge = 'b', experience = 'c',
@@ -234,7 +236,10 @@ describe("uploads", () => {
       await as(db, aal2(designer.id), () => db.query("select public.submit_competence($1)", [item]));
 
       expect(await ownerSees(owner.id)).toEqual({ doc: 1, file: 1 });
-      expect(await ownerSees(client.id)).toEqual({ doc: 0, file: 0 });
+      // Phase 4: the client reviews competence, so can open the evidence too.
+      expect(await ownerSees(client.id)).toEqual({ doc: 1, file: 1 });
+      const stranger = await signUpUser(db, "stranger");
+      expect(await ownerSees(stranger.id)).toEqual({ doc: 0, file: 0 });
     }));
 
   it("refuses to register someone else's file or one that wasn't uploaded", () =>

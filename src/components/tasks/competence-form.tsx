@@ -58,14 +58,20 @@ export function CompetenceForm(props: {
   draft: Statement | null;
   latestSubmitted: Statement | null;
   nextHref: string;
+  // After "needs more info", the old version can't be reused as it is.
+  mustRevise?: boolean;
 }) {
   const router = useRouter();
   const [fields, setFields] = useState<CompetenceFields>(props.draft ?? EMPTY_FIELDS);
   const [files, setFiles] = useState<FileRow[]>(props.draft?.files ?? []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const save = useCallback((value: CompetenceFields) => saveCompetence(value), []);
-  const autosave = useAutosave(fields, save);
+  // Never autosave on the "reuse your statement" choice (there's nothing being
+  // edited), or once the statement has been submitted.
+  const reuseChoice = !props.draft && Boolean(props.latestSubmitted);
+  const autosave = useAutosave(fields, save, !reuseChoice && !submitted);
 
   const set = <K extends keyof CompetenceFields>(key: K, value: CompetenceFields[K]) =>
     setFields((f) => ({ ...f, [key]: value }));
@@ -83,7 +89,7 @@ export function CompetenceForm(props: {
   }
 
   // Already submitted a statement elsewhere: offer to reuse it.
-  if (!props.draft && props.latestSubmitted) {
+  if (reuseChoice && props.latestSubmitted) {
     const s = props.latestSubmitted;
     return (
       <div className="space-y-4">
@@ -91,14 +97,17 @@ export function CompetenceForm(props: {
         <p className="text-sm">
           You submitted a competence statement (version {s.version}
           {s.submittedAt && `, ${new Date(s.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`}
-          ) with {s.files.length} evidence file{s.files.length === 1 ? "" : "s"}. You can use it for this project as it is, or update it first.
+          ) with {s.files.length} evidence file{s.files.length === 1 ? "" : "s"}.{" "}
+          {props.mustRevise ? "Update it to answer the request above." : "You can use it for this project as it is, or update it first."}
         </p>
         <StatementView statement={s} isFirm={props.isFirm} projectId={props.projectId} />
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button size="lg" disabled={busy}
-            onClick={() => run(() => submitCompetence(props.projectId, props.itemId), (next) => router.push(next ?? props.nextHref))}>
-            Use it for this project
-          </Button>
+          {!props.mustRevise && (
+            <Button size="lg" disabled={busy}
+              onClick={() => run(() => submitCompetence(props.projectId, props.itemId), (next) => router.push(next ?? props.nextHref))}>
+              Use it for this project
+            </Button>
+          )}
           <Button size="lg" variant="outline" disabled={busy}
             onClick={() => run(() => startCompetenceRevision(props.projectId), () => router.refresh())}>
             Update it first
@@ -174,7 +183,10 @@ export function CompetenceForm(props: {
             run(async () => {
               const saved = await saveCompetence(fields);
               return saved.error ? saved : submitCompetence(props.projectId, props.itemId);
-            }, (next) => router.push(next ?? props.nextHref))
+            }, (next) => {
+              setSubmitted(true);
+              router.push(next ?? props.nextHref);
+            })
           }>
           {busy ? "Submitting…" : "Submit for review"}
         </Button>
