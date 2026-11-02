@@ -33,7 +33,7 @@ export function InviteButton(props: {
       </div>
       {result && !result.ok && <p className="text-xs text-destructive">{result.error}</p>}
       {result?.ok && result.sent && (
-        <p className="text-xs text-green-700 dark:text-green-400">
+        <p className="text-xs text-success">
           {result.existingAccount ? `They already have an account: invitation emailed to ${result.email}.` : `Invite emailed to ${result.email}.`}
         </p>
       )}

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RegenerateRecoveryCodes } from "@/components/home/regenerate-recovery-codes";
 import { requireAal2 } from "@/lib/auth/server";
 import { roleLabel } from "@/lib/labels";
-import { signOut } from "./actions";
+import { AppFrame } from "@/components/nav/app-frame";
 import { Invitations, type Invitation } from "@/components/account/invitations";
 import { createDemo } from "./projects/demo-actions";
 import { Term } from "@/components/help/term";
@@ -14,11 +14,11 @@ import { DEMO_ENABLED } from "@/lib/features";
 
 export default function HomePage() {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
+    <AppFrame>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
         <Home />
       </Suspense>
-    </main>
+    </AppFrame>
   );
 }
 
@@ -42,22 +42,13 @@ async function Home() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Hello{profile?.full_name ? `, ${profile.full_name}` : ""}</h1>
-          <p className="text-sm text-muted-foreground">{email}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/account" className="text-sm text-muted-foreground hover:underline">My details</Link>
-          <Link href="/help" className="text-sm text-muted-foreground hover:underline">Help</Link>
-          <form action={signOut}>
-            <Button type="submit" variant="outline">Sign out</Button>
-          </form>
-        </div>
+      <header className="space-y-2">
+        <h1 className="text-4xl font-medium tracking-[-0.03em] sm:text-[44px] sm:leading-[48px]">Hello{profile?.full_name ? `, ${profile.full_name}` : ""}</h1>
+        <p className="text-[15px] text-muted-foreground">{email} · Your appointments, duties and competence records.</p>
       </header>
 
       {(invitations ?? []).length > 0 && (
-        <Card className="border-amber-300 dark:border-amber-800">
+        <Card className="border-warning/40 bg-warning-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-1.5">Invitations <HelpLink topic="partners" /></CardTitle>
             <CardDescription>Nothing about you is shared with a partner until you accept.</CardDescription>
@@ -83,7 +74,7 @@ async function Home() {
         </CardHeader>
         <CardContent>
           {visibleProjects.length ? (
-            <ul className="divide-y">
+            <ul className="divide-y divide-border">
               {visibleProjects.map((p) => {
                 const roles = (myRoles ?? []).filter((r) => r.project_id === p.id);
                 const items = (myItems ?? []).filter((i) => i.project_id === p.id);
@@ -92,7 +83,7 @@ async function Home() {
                 return (
                   <li key={p.id}>
                     <Link href={isOwner ? `/projects/${p.id}/dashboard` : `/projects/${p.id}/tasks`}
-                      className="flex flex-wrap items-center justify-between gap-2 py-3 hover:underline">
+                      className="-mx-3 flex flex-wrap items-center justify-between gap-2 rounded-xl px-3 py-3 hover:bg-muted">
                       <span>
                         <span className="font-medium">{p.name}</span>
                         {p.address && <span className="block text-xs text-muted-foreground">{p.address}</span>}

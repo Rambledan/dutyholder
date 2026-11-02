@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RowActions } from "@/components/dashboard/row-actions";
@@ -7,12 +6,12 @@ import { Outbox } from "@/components/demo/outbox";
 import { ProgressChart } from "@/components/demo/progress-chart";
 import type { DemoState } from "@/lib/demo/simulate";
 import { PageShell } from "@/components/projects/page-shell";
-import { ProgressBar } from "@/components/tasks/progress-bar";
 import { requireAal2 } from "@/lib/auth/server";
 import { nextChase, type ChaseState } from "@/lib/chase/plan";
 import { londonParts, projectNow } from "@/lib/clock";
 import { STATUS_LABELS, rag, roleLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
+import { StatCard } from "@/components/ui/stat-card";
 import { Term } from "@/components/help/term";
 import { HelpLink } from "@/components/help/help-link";
 import { DEMO_ENABLED } from "@/lib/features";
@@ -21,13 +20,13 @@ export const metadata = { title: "Dashboard · Dutyholder" };
 
 export default function DashboardPage(props: PageProps<"/projects/[id]/dashboard">) {
   return (
-    <PageShell back={{ href: "/", label: "Projects" }}>
+    <PageShell width="wide">
       <Dashboard params={props.params} />
     </PageShell>
   );
 }
 
-const DOT = { red: "bg-red-500", amber: "bg-amber-500", green: "bg-green-600" };
+const DOT = { red: "bg-destructive", amber: "bg-warning", green: "bg-success" };
 const KIND_LABEL: Record<string, string> = {
   nudge: "Nudge", reminder: "Reminder", firm: "Firm reminder", owner_digest: "Digest", manual: "Chased by you",
 };
@@ -100,19 +99,15 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground">{project.name}</p>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
+          <h1 className="text-4xl font-medium tracking-[-0.03em] sm:text-[44px] sm:leading-[48px]">Dashboard</h1>
           {project.clock_offset_days > 0 && !project.is_demo && (
-            <p className="text-xs text-amber-700">Project clock is {project.clock_offset_days} days ahead: {shortDate(now)}</p>
+            <p className="text-xs text-warning">Project clock is {project.clock_offset_days} days ahead: {shortDate(now)}</p>
           )}
-        </div>
-        <div className="flex gap-4 text-sm">
-          <Link href={`/projects/${id}/exports`} className="text-muted-foreground hover:underline">Evidence pack</Link>
-          <Link href={`/projects/${id}`} className="text-muted-foreground hover:underline">Project details</Link>
         </div>
       </header>
 
       {DEMO_ENABLED && project.is_demo && (
-        <Card className="border-amber-300 dark:border-amber-800">
+        <Card className="border-warning/40">
           <CardHeader>
             <CardTitle className="flex items-center gap-1.5">Demo controls <HelpLink topic="demo" /></CardTitle>
             <CardDescription>
@@ -129,16 +124,15 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
         </Card>
       )}
 
-      <Card>
-        <CardContent className="space-y-3 pt-6">
-          <ProgressBar done={green} total={all.length} />
-          <p className="flex flex-wrap gap-4 text-sm">
-            <span><span className={cn("mr-1 inline-block size-2.5 rounded-full", DOT.green)} />{green} complete</span>
-            <span><span className={cn("mr-1 inline-block size-2.5 rounded-full", DOT.amber)} />{amber} in progress or awaiting review</span>
-            <span><span className={cn("mr-1 inline-block size-2.5 rounded-full", DOT.red)} />{all.length - green - amber} not started or needing more info</span>
-          </p>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Duties complete" value={`${green} of ${all.length}`}
+          meter={all.length ? green / all.length : 0}
+          caption={`Across ${members.length} ${members.length === 1 ? "person" : "people"} on this project.`} />
+        <StatCard label="In progress" value={String(amber)} tone="warning" badge="Awaiting review"
+          caption="Started, submitted, or waiting for your review." />
+        <StatCard label="Not started" value={String(all.length - green - amber)} tone="danger" badge="Needs chasing"
+          caption="Not started, or sent back for more information." />
+      </div>
 
       <Card>
         <CardHeader>

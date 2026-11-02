@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppFrame } from "@/components/nav/app-frame";
 
 export const metadata = { title: "Demo videos · Dutyholder" };
 
@@ -39,10 +40,10 @@ const VIDEOS = [
 // public/demo, rendered from the Videowright project in videos/.
 export default function DemoPage() {
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
+    <AppFrame open>
       <Link href="/" className="mb-4 inline-block text-sm text-muted-foreground hover:underline">← Back</Link>
       <header className="mb-10 space-y-2">
-        <h1 className="text-2xl font-semibold">Demo videos</h1>
+        <h1 className="text-4xl font-medium tracking-[-0.03em] sm:text-[44px] sm:leading-[48px]">Demo videos</h1>
         <p className="max-w-2xl text-muted-foreground">
           Real screens from Dutyholder. A principal designer sets up a project, then an invited designer completes
           their duties under Part 2A of the Building Regulations.
@@ -69,6 +70,6 @@ export default function DemoPage() {
       <p className="mt-14 border-t pt-4 text-sm text-muted-foreground">
         The people, firms and project shown are fictional. The videos have no narration yet.
       </p>
-    </main>
+    </AppFrame>
   );
 }

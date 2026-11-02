@@ -25,9 +25,9 @@ export default function ProjectPage(props: PageProps<"/projects/[id]">) {
 }
 
 const RAG_CLASSES = {
-  red: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
-  amber: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
-  green: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200",
+  red: "bg-destructive-soft text-destructive",
+  amber: "bg-warning-soft text-warning",
+  green: "bg-success-soft text-success",
 };
 
 async function Project({ params }: { params: PageProps<"/projects/[id]">["params"] }) {
@@ -82,7 +82,7 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{project.name}</h1>
+          <h1 className="text-4xl font-medium tracking-[-0.03em] sm:text-[44px] sm:leading-[48px]">{project.name}</h1>
           {project.address && <p className="text-sm text-muted-foreground">{project.address}</p>}
         </div>
         <div className="flex flex-wrap gap-2">

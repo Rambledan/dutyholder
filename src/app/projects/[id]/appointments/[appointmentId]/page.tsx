@@ -81,7 +81,7 @@ async function Appointment({ params }: { params: Params }) {
                     <span className="font-medium">{r.name}</span>
                     <span className="text-muted-foreground"> · {partyLabel(r.party, domestic)}</span>
                   </span>
-                  <span className={r.signature ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}>
+                  <span className={r.signature ? "text-success" : "text-muted-foreground"}>
                     {r.signature ? `Signed ${fmt(r.signature.signed_at)}` : "Not signed yet"}
                   </span>
                 </li>

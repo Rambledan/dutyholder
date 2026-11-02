@@ -33,7 +33,7 @@ export function ReviewForm(props: { projectId: string; itemId: string; personNam
       <FormError message={error} />
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">Your decision</legend>
-        <label className="flex items-start gap-2 rounded-lg border p-3 text-sm has-[:checked]:border-green-600">
+        <label className="flex items-start gap-2 rounded-lg border p-3 text-sm has-[:checked]:border-success">
           <input type="radio" name="decision" className="mt-1" checked={decision === "satisfied"}
             onChange={() => setDecision("satisfied")} />
           <span>
@@ -43,7 +43,7 @@ export function ReviewForm(props: { projectId: string; itemId: string; personNam
             </span>
           </span>
         </label>
-        <label className="flex items-start gap-2 rounded-lg border p-3 text-sm has-[:checked]:border-amber-600">
+        <label className="flex items-start gap-2 rounded-lg border p-3 text-sm has-[:checked]:border-warning">
           <input type="radio" name="decision" className="mt-1" checked={decision === "needs_info"}
             onChange={() => setDecision("needs_info")} />
           <span>

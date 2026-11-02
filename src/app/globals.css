@@ -39,82 +39,119 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px; /* radius-md: buttons, inputs */
+  --radius-xl: 16px; /* radius-lg: nav items, wells */
+  --radius-2xl: 20px;
+  --radius-3xl: 24px; /* radius-xl: cards, sidebar panel */
+  --radius-4xl: 9999px;
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-nav-active: var(--nav-active);
+  --color-nav-active-foreground: var(--nav-active-foreground);
+  --shadow-card: var(--elev-card);
+  --shadow-pop: var(--elev-pop);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Dutyholder design system — see the "Dutyholder" design system artifact.
+     shadcn names on the left, design-system token in the comment. */
+  --background: #eef0f4; /* canvas */
+  --foreground: #0f1222; /* ink */
+  --card: #ffffff; /* surface */
+  --card-foreground: #0f1222;
+  --popover: #ffffff;
+  --popover-foreground: #0f1222;
+  --primary: #4f46e5; /* accent */
+  --primary-hover: #4338ca; /* accent-hover */
+  --primary-soft: #ecebfd; /* accent-soft */
+  --primary-foreground: #ffffff; /* on-accent */
+  --secondary: #f4f5f8; /* surface-sunken */
+  --secondary-foreground: #0f1222;
+  --muted: #f4f5f8; /* surface-sunken */
+  --muted-foreground: #555b6c; /* ink-muted */
+  --subtle-foreground: #646b7d; /* ink-subtle */
+  --accent: #f4f5f8; /* hover wells */
+  --accent-foreground: #0f1222;
+  --destructive: #c21e3a; /* danger */
+  --destructive-soft: #fde8ec; /* danger-soft */
+  --warning: #9a5b00;
+  --warning-soft: #fef3e0;
+  --success: #157a3f;
+  --success-soft: #e4f6ea;
+  --nav-active: #0f1222;
+  --nav-active-foreground: #ffffff;
+  --border: #e3e6ec; /* line */
+  --input: #8d93a3; /* line-strong */
+  --ring: #4f46e5;
+  --chart-1: #4f46e5;
+  --chart-2: #e5487f;
+  --chart-3: #9b5cf6;
+  --chart-4: #1f9d55;
+  --chart-5: #c9ced8;
+  --elev-card: 0 1px 2px #0f12220a;
+  --elev-pop: 0 8px 24px -4px #0f12221f, 0 2px 6px #0f122214;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #555b6c;
+  --sidebar-primary: #0f1222;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f4f5f8;
+  --sidebar-accent-foreground: #0f1222;
+  --sidebar-border: #e3e6ec;
+  --sidebar-ring: #4f46e5;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0b0d14;
+  --foreground: #f2f3f7;
+  --card: #151823;
+  --card-foreground: #f2f3f7;
+  --popover: #151823;
+  --popover-foreground: #f2f3f7;
+  --primary: #9a9cfa;
+  --primary-hover: #b4b6fc;
+  --primary-soft: #23244a;
+  --primary-foreground: #0b0d14;
+  --secondary: #1c2030;
+  --secondary-foreground: #f2f3f7;
+  --muted: #1c2030;
+  --muted-foreground: #a3a9ba;
+  --subtle-foreground: #8a90a2;
+  --accent: #1c2030;
+  --accent-foreground: #f2f3f7;
+  --destructive: #ff8095;
+  --destructive-soft: #3a1520;
+  --warning: #f5b54a;
+  --warning-soft: #3a2a0e;
+  --success: #4ade80;
+  --success-soft: #0f2e1c;
+  --nav-active: #f2f3f7;
+  --nav-active-foreground: #0b0d14;
+  --border: #262b3b;
+  --input: #5a6178;
+  --ring: #9a9cfa;
+  --chart-1: #9a9cfa;
+  --chart-2: #f472a3;
+  --chart-3: #b991fa;
+  --chart-4: #4ade80;
+  --chart-5: #3a4054;
+  --elev-card: 0 1px 2px #00000066;
+  --elev-pop: 0 12px 28px -4px #000000cc;
+  --sidebar: #151823;
+  --sidebar-foreground: #a3a9ba;
+  --sidebar-primary: #f2f3f7;
+  --sidebar-primary-foreground: #0b0d14;
+  --sidebar-accent: #1c2030;
+  --sidebar-accent-foreground: #f2f3f7;
+  --sidebar-border: #262b3b;
+  --sidebar-ring: #9a9cfa;
 }
 
 @layer base {
@@ -126,5 +163,9 @@
   }
   html {
     @apply font-sans;
+  }
+  /* One light, tight page title per screen (design system "display"). */
+  h1 {
+    letter-spacing: -0.02em;
   }
 }

@@ -103,7 +103,7 @@ async function TaskView({ params }: { params: Params }) {
       body = (
         <div className="space-y-4">
           {task.status === "needs_info" && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+            <div className="rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm">
               <p className="font-medium">More information needed</p>
               <p className="whitespace-pre-line">
                 {lastReview?.note ?? "You reported a change in your competence. Please update your statement."}

@@ -47,7 +47,7 @@ async function Account() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold">My details</h1>
+        <h1 className="text-4xl font-medium tracking-[-0.03em] sm:text-[44px] sm:leading-[48px]">My details</h1>
         <p className="text-sm text-muted-foreground">
           One sign-in for every project, whoever invites you. Save your details and competence statement here once, and
           reuse them on each project.
@@ -55,7 +55,7 @@ async function Account() {
       </header>
 
       {(invitations ?? []).length > 0 && (
-        <Card id="invitations" className="scroll-mt-6 border-amber-300 dark:border-amber-800">
+        <Card id="invitations" className="scroll-mt-6 border-warning/40">
           <CardHeader>
             <CardTitle className="flex items-center gap-1.5">Invitations <HelpLink topic="partners" /></CardTitle>
             <CardDescription>
@@ -95,7 +95,7 @@ async function Account() {
           ) : (
             <p className="text-muted-foreground">You haven&apos;t written one yet.</p>
           )}
-          {draft && <p className="text-amber-700 dark:text-amber-400">You have unsaved changes (draft version {draft.version}).</p>}
+          {draft && <p className="text-warning">You have unsaved changes (draft version {draft.version}).</p>}
           <Link href="/account/competence" className={buttonVariants()}>
             {latest || draft ? "View or update" : "Write your statement"}
           </Link>
