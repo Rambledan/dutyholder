@@ -3,7 +3,11 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RegenerateRecoveryCodes } from "@/components/home/regenerate-recovery-codes";
-import { requireAal2 } from "@/lib/auth/server";
+import { isFullySignedIn, requireAal2 } from "@/lib/auth/server";
+import { parseAuthMode, safeNextPath } from "@/lib/auth/routing";
+import { createClient } from "@/lib/supabase/server";
+import { Landing } from "@/components/landing/landing";
+import { AuthDialog, type InviteCheck } from "@/components/auth/auth-dialog";
 import { roleLabel } from "@/lib/labels";
 import { AppFrame } from "@/components/nav/app-frame";
 import { Invitations, type Invitation } from "@/components/account/invitations";
@@ -12,14 +16,43 @@ import { Term } from "@/components/help/term";
 import { HelpLink } from "@/components/help/help-link";
 import { DEMO_ENABLED } from "@/lib/features";
 
-export default function HomePage() {
+// Signed-out visitors get the landing page, with sign-in and sign-up in a
+// lightbox over it. Fully signed-in people get their projects. (Anyone
+// part-way through two-factor is sent to that step by the proxy first.)
+export default function HomePage(props: PageProps<"/">) {
   return (
-    <AppFrame>
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
-        <Home />
-      </Suspense>
-    </AppFrame>
+    <Suspense fallback={<div className="flex-1" />}>
+      <Entry searchParams={props.searchParams} />
+    </Suspense>
   );
+}
+
+async function Entry({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
+  if (await isFullySignedIn()) {
+    return (
+      <AppFrame>
+        <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+          <Home />
+        </Suspense>
+      </AppFrame>
+    );
+  }
+  const { auth, token, next } = await searchParams;
+  return (
+    <>
+      <Landing />
+      <AuthDialog invite={parseAuthMode(auth) === "signup" ? await checkInvite(token, next) : { status: "none" }} />
+    </>
+  );
+}
+
+// The database says whether the invite token is still good, and for whom.
+async function checkInvite(token: unknown, next: unknown): Promise<InviteCheck> {
+  if (typeof token !== "string" || !token) return { status: "none" };
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("check_invite", { p_token: token });
+  if (typeof data !== "string") return { status: "invalid" };
+  return { status: "valid", email: data, token, next: safeNextPath(typeof next === "string" ? next : null) };
 }
 
 async function Home() {

@@ -1,6 +1,4 @@
-import { connection } from "next/server";
-import { requireAal2 } from "@/lib/auth/server";
-import { createClient } from "@/lib/supabase/server";
+import { isFullySignedIn, requireAal2 } from "@/lib/auth/server";
 import { DEMO_ENABLED } from "@/lib/features";
 import type { DutyholderRole } from "@/lib/labels";
 import type { ProjectScope } from "@/lib/nav";
@@ -37,9 +35,3 @@ export async function AppSidebar({ optional = false }: { optional?: boolean }) {
   return <SidebarNav projects={scopes} person={{ name: profile?.full_name ?? "", email }} />;
 }
 
-async function isFullySignedIn() {
-  await connection();
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  return data?.claims?.aal === "aal2";
-}
