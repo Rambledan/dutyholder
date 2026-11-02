@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormError } from "@/components/auth/form-error";
@@ -60,26 +59,22 @@ export function SignupForm({ email, token, next }: { email: string; token: strin
 
   if (checkEmail) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Check your email</CardTitle>
-          <CardDescription>We&apos;ve sent a confirmation link to {email}. Open it, then sign in.</CardDescription>
-        </CardHeader>
-        <CardContent />
-      </Card>
+      <div className="space-y-1">
+        <h2 id="auth-title" className="text-2xl font-medium tracking-[-0.02em]">Check your email</h2>
+        <p className="text-sm text-muted-foreground">We&apos;ve sent a confirmation link to {email}. Open it, then sign in.</p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create your account</CardTitle>
-        <CardDescription>
+    <div className="space-y-5">
+      <div className="space-y-1">
+        <h2 id="auth-title" className="text-2xl font-medium tracking-[-0.02em]">Create your account</h2>
+        <p className="text-sm text-muted-foreground">
           You&apos;ve been invited to record your Building Regulations dutyholder information.
           After this you&apos;ll set up <Term id="two-factor">two-factor login</Term> on your phone.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </p>
+      </div>
         <form onSubmit={onSubmit} className="space-y-4">
           <FormError message={error} />
           <div className="space-y-2">
@@ -119,7 +114,6 @@ export function SignupForm({ email, token, next }: { email: string; token: strin
             {busy ? "Creating account…" : "Create account"}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

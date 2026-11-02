@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { decideAccess, INACTIVITY_LIMIT_MS, safeNextPath, type AccessState } from "@/lib/auth/routing";
+import {
+  authAliasTarget, decideAccess, INACTIVITY_LIMIT_MS, parseAuthMode, safeNextPath, signInPath, type AccessState,
+} from "@/lib/auth/routing";
 
 const now = Date.UTC(2026, 10, 1, 9, 0, 0);
 const base: AccessState = {
@@ -12,12 +14,16 @@ const base: AccessState = {
 };
 
 describe("decideAccess", () => {
-  it("sends signed-out visitors to login, remembering where they were going", () => {
-    expect(decideAccess({ ...base, path: "/" })).toEqual({ kind: "redirect", to: "/login" });
+  it("shows signed-out visitors the landing page", () => {
+    expect(decideAccess({ ...base, path: "/" })).toEqual({ kind: "allow" });
+  });
+
+  it("sends signed-out visitors to the sign-in lightbox, remembering where they were going", () => {
     expect(decideAccess({ ...base, path: "/projects/1" })).toEqual({
       kind: "redirect",
-      to: "/login?next=%2Fprojects%2F1",
+      to: "/?auth=signin&next=%2Fprojects%2F1",
     });
+    expect(decideAccess({ ...base, path: "/account" })).toEqual({ kind: "redirect", to: "/?auth=signin&next=%2Faccount" });
   });
 
   it("lets signed-out visitors see login and sign-up only", () => {
@@ -67,6 +73,30 @@ describe("decideAccess", () => {
     const s = { ...base, signedIn: true, aal: "aal2" as const, hasVerifiedFactor: true };
     expect(decideAccess({ ...s, lastSeenMs: now - INACTIVITY_LIMIT_MS + 1000 })).toEqual({ kind: "allow" });
     expect(decideAccess({ ...s, lastSeenMs: now - INACTIVITY_LIMIT_MS - 1000 })).toEqual({ kind: "timeout" });
+  });
+});
+
+describe("sign-in addresses", () => {
+  it("builds the lightbox address", () => {
+    expect(signInPath()).toBe("/?auth=signin");
+    expect(signInPath({ next: "/" })).toBe("/?auth=signin");
+    expect(signInPath({ reason: "timeout" })).toBe("/?auth=signin&reason=timeout");
+  });
+
+  it("forwards old /login and /signup links to the lightbox, keeping the invite token", () => {
+    expect(authAliasTarget("/login", "")).toBe("/?auth=signin");
+    expect(authAliasTarget("/login", "?reason=timeout")).toBe("/?reason=timeout&auth=signin");
+    expect(authAliasTarget("/signup", "?token=abc&next=%2Fprojects%2F1%2Ftasks"))
+      .toBe("/?token=abc&next=%2Fprojects%2F1%2Ftasks&auth=signup");
+    expect(authAliasTarget("/loginx", "")).toBeNull();
+    expect(authAliasTarget("/", "")).toBeNull();
+  });
+
+  it("only accepts the two lightbox modes", () => {
+    expect(parseAuthMode("signin")).toBe("signin");
+    expect(parseAuthMode("signup")).toBe("signup");
+    expect(parseAuthMode("admin")).toBeNull();
+    expect(parseAuthMode(["signin"])).toBeNull();
   });
 });
 

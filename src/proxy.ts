@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { decideAccess } from "@/lib/auth/routing";
+import { authAliasTarget, decideAccess, signInPath } from "@/lib/auth/routing";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 
 const LAST_SEEN_COOKIE = "dh_last_seen";
@@ -10,6 +10,10 @@ const LAST_SEEN_COOKIE = "dh_last_seen";
 // This is the first lock; pages re-check on the server, and the database's
 // RLS rules are the final lock.
 export async function proxy(request: NextRequest) {
+  // Sign-in now happens in a lightbox on the landing page.
+  const alias = authAliasTarget(request.nextUrl.pathname, request.nextUrl.search);
+  if (alias) return NextResponse.redirect(new URL(alias, request.url));
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(supabaseUrl(), supabasePublishableKey(), {
@@ -53,7 +57,7 @@ export async function proxy(request: NextRequest) {
 
   if (decision.kind === "timeout") {
     await supabase.auth.signOut();
-    const redirect = NextResponse.redirect(new URL("/login?reason=timeout", request.url));
+    const redirect = NextResponse.redirect(new URL(signInPath({ reason: "timeout" }), request.url));
     response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
     redirect.cookies.delete(LAST_SEEN_COOKIE);
     return redirect;

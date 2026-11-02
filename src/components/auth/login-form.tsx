@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -11,7 +10,8 @@ import { FormError } from "@/components/auth/form-error";
 import { safeNextPath } from "@/lib/auth/routing";
 import { createClient } from "@/lib/supabase/client";
 
-export function LoginForm() {
+// Email and password. The two-factor step follows on its own page.
+export function LoginForm({ onInvite }: { onInvite: () => void }) {
   const router = useRouter();
   // Swap to the next page and re-run the server checks with the new session.
   const navigate = (path: string) => {
@@ -40,12 +40,11 @@ export function LoginForm() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Sign in</CardTitle>
-        <CardDescription>You&apos;ll be asked for a code from your authenticator app next.</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="space-y-5">
+      <div className="space-y-1">
+        <h2 id="auth-title" className="text-2xl font-medium tracking-[-0.02em]">Welcome back</h2>
+        <p className="text-sm text-muted-foreground">You&apos;ll be asked for a code from your authenticator app next.</p>
+      </div>
         <form onSubmit={onSubmit} className="space-y-4">
           {params.get("reason") === "timeout" && (
             <Alert>
@@ -55,7 +54,7 @@ export function LoginForm() {
           <FormError message={error} />
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" autoComplete="email" required value={email}
+            <Input id="email" type="email" autoComplete="email" autoFocus required value={email}
               onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="space-y-2">
@@ -66,11 +65,13 @@ export function LoginForm() {
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? "Signing in…" : "Sign in"}
           </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            Accounts are by invitation only. Ask your project&apos;s principal designer for an invite.
+          <p className="text-center text-sm text-muted-foreground">
+            Been invited to a project?{" "}
+            <button type="button" onClick={onInvite} className="font-medium text-foreground underline-offset-4 hover:underline">
+              Create your account
+            </button>
           </p>
         </form>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
