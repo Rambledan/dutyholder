@@ -68,7 +68,7 @@ async function Review({ params }: { params: Params }) {
         </CardHeader>
         <CardContent className="space-y-6">
           {(changes ?? []).map((c) => (
-            <div key={c.id} className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+            <div key={c.id} className="rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm">
               <p className="font-medium">Change reported {fmt(c.created_at)}</p>
               <p className="whitespace-pre-line">{c.note}</p>
             </div>

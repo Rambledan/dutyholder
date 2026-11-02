@@ -21,7 +21,7 @@ export default function TasksPage(props: PageProps<"/projects/[id]/tasks">) {
   );
 }
 
-const RAG_DOT = { red: "bg-red-500", amber: "bg-amber-500", green: "bg-green-600" };
+const RAG_DOT = { red: "bg-destructive", amber: "bg-warning", green: "bg-success" };
 
 async function Tasks({ params }: { params: PageProps<"/projects/[id]/tasks">["params"] }) {
   const { supabase, userId } = await requireAal2();
@@ -61,7 +61,7 @@ async function Tasks({ params }: { params: PageProps<"/projects/[id]/tasks">["pa
     <div className="space-y-6">
       <header className="space-y-1">
         <p className="text-sm text-muted-foreground">{project.name}</p>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold">Your tasks <HelpLink topic="tasks" /></h1>
+        <h1 className="flex items-center gap-2 text-4xl font-medium tracking-[-0.03em] sm:text-[44px] sm:leading-[48px]">Your tasks <HelpLink topic="tasks" /></h1>
         <p className="text-sm text-muted-foreground">
           Your duties on this project under <Term id="part-2a">Part 2A of the Building Regulations</Term>. Most take a minute or two; the
           competence statement takes longest. Everything saves as you go.
@@ -71,7 +71,7 @@ async function Tasks({ params }: { params: PageProps<"/projects/[id]/tasks">["pa
       <ProgressBar done={done} total={total} />
 
       {toSign.length > 0 && (
-        <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
+        <div className="space-y-2 rounded-lg border border-warning/40 bg-warning-soft p-4">
           <h2 className="text-sm font-semibold">Waiting for your signature</h2>
           {toSign.map((s) => (
             <Link key={s.appointment_id} href={`/projects/${id}/appointments/${s.appointment_id}`}
@@ -87,7 +87,7 @@ async function Tasks({ params }: { params: PageProps<"/projects/[id]/tasks">["pa
           {done === 0 ? "Start" : "Continue"}: {next.title}
         </Link>
       ) : total > 0 ? (
-        <p className="rounded-lg border bg-green-50 p-4 text-sm text-green-900 dark:bg-green-950 dark:text-green-100">
+        <p className="rounded-lg border bg-success-soft p-4 text-sm text-success">
           You&apos;re done for now. You&apos;ll hear from the project team if anything else is needed.
         </p>
       ) : (

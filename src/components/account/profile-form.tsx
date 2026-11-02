@@ -15,7 +15,7 @@ export function ProfileForm({ initial, email }: { initial: ProfileValues; email:
   return (
     <form action={action} className="space-y-4">
       <FormError message={state.error} />
-      {state.message && <p className="text-sm text-green-700 dark:text-green-400">{state.message}</p>}
+      {state.message && <p className="text-sm text-success">{state.message}</p>}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="full_name">Full name</Label>
