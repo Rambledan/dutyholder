@@ -1,0 +1,242 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "screens": {
+    "01-signup": {
+      "file": "01-signup.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "createButton": {
+          "x": 512,
+          "y": 726,
+          "w": 416,
+          "h": 32
+        },
+        "form": {
+          "x": 512,
+          "y": 244,
+          "w": 416,
+          "h": 514
+        }
+      }
+    },
+    "02-two-factor": {
+      "file": "02-two-factor.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "qr": {
+          "x": 624,
+          "y": 308,
+          "w": 192,
+          "h": 192
+        },
+        "code": {
+          "x": 512,
+          "y": 591,
+          "w": 416,
+          "h": 32
+        }
+      }
+    },
+    "03-recovery-codes": {
+      "file": "03-recovery-codes.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "codes": {
+          "x": 512,
+          "y": 346,
+          "w": 416,
+          "h": 166
+        }
+      }
+    },
+    "04-home": {
+      "file": "04-home.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "newProject": {
+          "x": 971,
+          "y": 132,
+          "w": 101,
+          "h": 32
+        }
+      }
+    },
+    "05-new-project": {
+      "file": "05-new-project.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "name": {
+          "x": 304,
+          "y": 168,
+          "w": 832,
+          "h": 32
+        },
+        "description": {
+          "x": 304,
+          "y": 324,
+          "w": 832,
+          "h": 64
+        }
+      }
+    },
+    "06-help-mark": {
+      "file": "06-help-mark.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "popover": {
+          "x": 369,
+          "y": 539,
+          "w": 288,
+          "h": 160
+        },
+        "question": {
+          "x": 304,
+          "y": 700,
+          "w": 215,
+          "h": 20
+        }
+      }
+    },
+    "07-new-project-questions": {
+      "file": "07-new-project-questions.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "create": {
+          "x": 304,
+          "y": 820,
+          "w": 115,
+          "h": 32
+        },
+        "contractors": {
+          "x": 304,
+          "y": 626,
+          "w": 329,
+          "h": 20
+        }
+      }
+    },
+    "08-project-created": {
+      "file": "08-project-created.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "title": {
+          "x": 288,
+          "y": 68,
+          "w": 135,
+          "h": 32
+        }
+      }
+    },
+    "09-add-member": {
+      "file": "09-add-member.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "form": {
+          "x": 304,
+          "y": 242,
+          "w": 832,
+          "h": 210
+        },
+        "add": {
+          "x": 304,
+          "y": 420,
+          "w": 103,
+          "h": 32
+        }
+      }
+    },
+    "10-team-invite": {
+      "file": "10-team-invite.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "team": {
+          "x": 304,
+          "y": 195,
+          "w": 832,
+          "h": 370
+        },
+        "invite": {
+          "x": 304,
+          "y": 288,
+          "w": 832,
+          "h": 65
+        },
+        "inviteButton": {
+          "x": 910,
+          "y": 366,
+          "w": 55,
+          "h": 28
+        }
+      }
+    },
+    "11-project-full": {
+      "file": "11-project-full.png",
+      "fullPage": true,
+      "width": 1440,
+      "height": 4534,
+      "highlights": {
+        "checklists": {
+          "x": 288,
+          "y": 1850,
+          "w": 864,
+          "h": 28
+        },
+        "priya": {
+          "x": 288,
+          "y": 2424,
+          "w": 864,
+          "h": 722
+        },
+        "grace": {
+          "x": 288,
+          "y": 3501,
+          "w": 864,
+          "h": 323
+        }
+      }
+    },
+    "12-dashboard": {
+      "file": "12-dashboard.png",
+      "fullPage": true,
+      "width": 1440,
+      "height": 915,
+      "highlights": {
+        "progress": {
+          "x": 288,
+          "y": 144,
+          "w": 864,
+          "h": 122
+        },
+        "grid": {
+          "x": 304,
+          "y": 388,
+          "w": 832,
+          "h": 451
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "videowright",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd videos && npx videowright dev videos/project_setup/timeline.ts --port 5173"],
+      "port": 5173
+    }
+  ]
+}

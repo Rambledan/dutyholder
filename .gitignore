@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+# Videowright video project (videos/) dependencies and rendered output
+/videos/node_modules
 /.pnp
 .pnp.*
 .yarn/*

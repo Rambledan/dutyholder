@@ -24,3 +24,17 @@ Auth with TOTP MFA, Storage), Resend, Vercel Cron, Claude API.
 I'm a beginner. Before big changes, explain the plan in plain English.
 After each change, tell me what to click to test it.
 Work one phase at a time and stop at its "done when" check.
+
+<!-- videowright:start -->
+*Auto-managed by Videowright installer. Edits inside this block will be overwritten on re-install. Add your own context outside the markers.*
+
+The folder `videos/` in this project is a [Videowright](https://github.com/scosman/videowright) project -- a library for composing animated explainer videos in HTML/CSS/JS.
+
+For any video-related work, use the `videowright` skill (loaded automatically from `.claude/skills/videowright` or `.agents/skills/videowright`). It has full guidance on segments, voiceovers, styles, and the dev server.
+
+Key paths:
+- `videos/videowright.config.ts` -- project config and default style.
+- `videos/videos/` -- one folder per video.
+- `videos/styles/` -- design tokens and shared styling.
+- `videos/segments/`, `videos/components/`, `videos/transitions/` -- shared building blocks.
+<!-- videowright:end -->
