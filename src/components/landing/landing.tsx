@@ -161,8 +161,8 @@ function TimeBreakdown() {
             From {formatMinutes(MANUAL_MINUTES)} to {formatMinutes(APP_MINUTES)} per dutyholder.
           </h2>
           <p className="text-lg text-muted-foreground">
-            Most of the admin under Part 2A isn&apos;t the judgement calls. It&apos;s the letters, the chasing and the
-            filing. Dutyholder does that part, so your time goes on reviewing competence and running the job.
+            Most Part 2A admin is letters, reminders and filing. Dutyholder handles those, so your time goes on
+            reviewing competence and running the job.
           </p>
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div className="rounded-2xl bg-muted p-5">
@@ -213,8 +213,8 @@ function Calculator() {
     <section className={cn(section, "py-16 sm:py-24")}>
       <div className="mb-8 max-w-2xl space-y-3">
         <p className={overline}>Your numbers</p>
-        <h2 className={h2}>Work out what it gives back to you.</h2>
-        <p className="text-lg text-muted-foreground">Move the sliders to match your work. The totals use the estimates above.</p>
+        <h2 className={h2}>Work out your own saving.</h2>
+        <p className="text-lg text-muted-foreground">Set the sliders to match your work. The totals use the estimates above.</p>
       </div>
       <TimeCalculator />
     </section>
@@ -228,15 +228,15 @@ const STEPS = [
   },
   {
     icon: BellRing, title: "Reminders go out for you",
-    body: "Polite nudges, then firmer reminders. Weekdays 8am to 6pm only, one email a day at most, signed on your behalf. Pause anyone you'd rather call yourself.",
+    body: "A polite nudge first, then firmer reminders. Weekdays 8am to 6pm, one email a day at most, signed on your behalf. You can pause anyone you'd rather call yourself.",
   },
   {
     icon: LayoutDashboard, title: "Watch it turn green",
-    body: "One grid of people and duties shows who's done, who's waiting for your review and who needs a call.",
+    body: "A grid of people and duties shows who has finished and who is waiting on your review. It also shows who needs a call.",
   },
   {
     icon: FolderArchive, title: "Export the evidence pack",
-    body: "Signed appointments, competence decisions and acknowledgements, filed and zipped with a full audit trail.",
+    body: "Download one zip file with the signed appointments, competence decisions, acknowledgements and the audit trail.",
   },
 ];
 
@@ -245,7 +245,7 @@ function HowItWorks() {
     <section id="how" className={cn(section, "scroll-mt-24 pb-16 sm:pb-24")}>
       <div className="mb-10 max-w-2xl space-y-3">
         <p className={overline}>How it works</p>
-        <h2 className={h2}>Set it up once and Dutyholder keeps everyone moving.</h2>
+        <h2 className={h2}>Set the project up once. The reminders run themselves.</h2>
       </div>
       <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((s, i) => (
@@ -264,11 +264,11 @@ function HowItWorks() {
 }
 
 const ROLES = [
-  { role: "Principal designer", gets: "Runs the process: invites the team, reviews competence and watches the dashboard. Most of the time saved is theirs." },
+  { role: "Principal designer", gets: "Usually runs the project in Dutyholder: invites the team, reviews competence and keeps an eye on the dashboard. Most of the time saved is theirs." },
   { role: "Client", gets: "Signs appointments online and records competence decisions on the principal designer and principal contractor." },
   { role: "Designer", gets: "Acknowledges their duties, fills in their competence statement and uploads evidence, usually in one sitting." },
   { role: "Principal contractor", gets: "Does the same for the construction side, and sees who else is on the team." },
-  { role: "Contractor", gets: "Gets a short list of what applies to them, with a single link from the email." },
+  { role: "Contractor", gets: "Gets a short list of what applies to them, opened from one link in the email." },
 ];
 
 function Roles() {
@@ -277,10 +277,10 @@ function Roles() {
       <div className={cn(section, "grid gap-10 lg:grid-cols-[0.8fr_1.2fr]")}>
         <div className="space-y-4">
           <p className={overline}>Who it&apos;s for</p>
-          <h2 className={h2}>Every statutory role, with their own view.</h2>
+          <h2 className={h2}>Each role sees only what applies to them.</h2>
           <p className="text-lg text-muted-foreground">
-            One account works across all your projects, with a different role on each. Your competence passport goes
-            with you, so you don&apos;t type it out again for the next job.
+            One account covers all your projects, with a different role on each. Your competence passport is saved
+            to your account, so you don&apos;t fill it in again for the next job.
           </p>
           <div className="flex items-center gap-3 rounded-2xl bg-muted p-4 text-sm">
             <PenLine className="size-5 shrink-0 text-primary" />
@@ -301,9 +301,9 @@ function Roles() {
 }
 
 const SECURITY = [
-  { icon: Lock, title: "Two-factor sign-in", body: "Everyone uses an authenticator app code, as well as their password, every time they sign in." },
-  { icon: ShieldCheck, title: "Only your project", body: "People see only the projects they're on, and only what their role needs. The database itself enforces this." },
-  { icon: ScrollText, title: "A full audit trail", body: "Every change, signature, upload and email is logged and can't be edited." },
+  { icon: Lock, title: "Two-factor sign-in", body: "Everyone signs in with a password and a code from an authenticator app." },
+  { icon: ShieldCheck, title: "Only your project", body: "People see only the projects they're on and what their role needs. The database enforces this, not just the screens." },
+  { icon: ScrollText, title: "A full audit trail", body: "Every change, signature, upload and email is logged. The log can't be edited." },
   { icon: FileCheck2, title: "Statutory wording", body: "Duties follow regulations 11A to 11Q, using the role names from the Building Regulations." },
 ];
 
@@ -311,8 +311,8 @@ function Security() {
   return (
     <section className={cn(section, "py-16 sm:py-24")}>
       <div className="mb-10 max-w-2xl space-y-3">
-        <p className={overline}>Built for the paper trail</p>
-        <h2 className={h2}>Faster, without being less careful.</h2>
+        <p className={overline}>Security and records</p>
+        <h2 className={h2}>Every step is on the record.</h2>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {SECURITY.map((s) => (
@@ -333,7 +333,7 @@ function FinalCta() {
       <div className="flex flex-col items-start gap-6 rounded-3xl bg-nav-active p-8 text-nav-active-foreground sm:p-12 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-2xl space-y-3">
           <h2 className={h2}>Get back about {TEAM_OF_SIX_HOURS} hours on your next project.</h2>
-          <p className="text-lg opacity-75">Sign in to your projects, or accept an invite to join one.</p>
+          <p className="text-lg opacity-75">Sign in to your projects, or use your invite link to join one.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <AuthLink className={cn(buttonVariants({ size: "lg" }), "h-12 px-5 text-base")}>
