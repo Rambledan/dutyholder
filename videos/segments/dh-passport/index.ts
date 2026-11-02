@@ -1,9 +1,11 @@
 import { defineSegment } from "videowright";
-import { AppScreen } from "../../components/app-screen";
+import { AppScreen, boxes, pad, union } from "../../components/app-screen";
+import manifest from "../../videos/dutyholder_tasks/assets/screens/manifest.json";
 import account from "../../videos/dutyholder_tasks/assets/screens/10-account.png";
 
 let screen: AppScreen | null = null;
 
+// Zoom and highlight areas come from the boxes the capture script recorded.
 export default defineSegment({
 	id: "dh-passport",
 	advances: [3.4, 7.4],
@@ -12,20 +14,21 @@ export default defineSegment({
 
 	mount(el) {
 		screen = new AppScreen(el, "Step 9 / 9", [
-			{ src: account, height: 1096, url: "dutyholder.vercel.app/account" },
+			{ src: account, height: manifest.screens["10-account"].height, url: "dutyholder.vercel.app/account" },
 		]);
 	},
 
 	async play(ctx) {
 		const s = screen as AppScreen;
 		await s.ready();
-		s.focus({ x: 288, y: 80, w: 864, h: 560 }, 1.3, 1);
+		const b = boxes(manifest, "10-account");
+		s.focus(pad(b.details, [20, 100]), 1.2, 1);
 		s.enter();
 		s.say("One sign-in, saved details");
 		await ctx.waitForNext();
-		s.focus({ x: 288, y: 630, w: 864, h: 450 }, 1.4, 1200);
+		s.focus(pad(union(b.passport, b.partners), 20), 1.35, 1200);
 		s.say("Reuse your statement on the next project");
-		s.ring({ x: 288, y: 650, w: 864, h: 178 }, 1100);
+		s.ring(b.passport, 1100);
 		await ctx.waitForNext();
 	},
 

@@ -1,5 +1,6 @@
 import { defineSegment } from "videowright";
-import { AppScreen } from "../../components/app-screen";
+import { AppScreen, boxes, pad, union } from "../../components/app-screen";
+import manifest from "../../videos/dutyholder_tasks/assets/screens/manifest.json";
 import task from "../../videos/dutyholder_tasks/assets/screens/08-report-change.png";
 
 let screen: AppScreen | null = null;
@@ -17,18 +18,19 @@ export default defineSegment({
 	async play(ctx) {
 		const s = screen as AppScreen;
 		await s.ready();
-		s.focus({ x: 288, y: 110, w: 864, h: 350 }, 1.5, 1);
+		const b = boxes(manifest, "08-report-change");
+		s.focus(pad(union(b.title, b.button), 20), 1.5, 1);
 		s.enter();
 		s.say("Agree to report a change in competence");
-		const duty = s.ring({ x: 304, y: 178, w: 832, h: 46 }, 600);
+		const duty = s.ring(b.duty, 600);
 		await ctx.waitForNext();
 		s.unring(duty);
 		s.say("Tick and sign");
-		const sign = s.ring({ x: 304, y: 255, w: 832, h: 110 }, 200);
+		const sign = s.ring(union(b.confirm, b.sign), 200);
 		await ctx.waitForNext();
 		s.unring(sign);
 		s.say("Done");
-		s.ring({ x: 304, y: 404, w: 140, h: 36 }, 200);
+		s.ring(b.button, 200);
 		await ctx.waitForNext();
 	},
 

@@ -1,31 +1,31 @@
-/* Dutyholder: design tokens matched to the Dutyholder web app.
- * Warm-white canvas, near-black ink, deep-green highlight, red/amber/green
- * status colours. Geist + Geist Mono.
+/* Dutyholder: design tokens matched to the Dutyholder design system
+ * (src/app/globals.css). Cool grey canvas, ink, indigo accent, RAG status
+ * colours. Geist + Geist Mono.
  */
 @import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap");
 
 :root {
-	--color-bg: #fafaf9;
-	--color-fg: #0a0a0a;
-	--color-accent: #15803d; /* the app's "complete" green */
+	--color-bg: #eef0f4; /* canvas */
+	--color-fg: #0f1222; /* ink */
+	--color-accent: #4f46e5; /* accent */
 
-	--color-muted: #57534e;
-	--color-border: #e7e5e4;
+	--color-muted: #555b6c; /* ink-muted */
+	--color-border: #e3e6ec; /* line */
 	--color-surface: #ffffff;
-	--color-scrim: rgba(10, 10, 10, 0.55);
+	--color-scrim: rgba(15, 18, 34, 0.55);
 
 	/* Task status, exactly as in the app. Only ever used for status. */
-	--color-red: #ef4444;
-	--color-amber: #f59e0b;
-	--color-green: #16a34a;
+	--color-red: #c21e3a; /* danger */
+	--color-amber: #9a5b00; /* warning */
+	--color-green: #157a3f; /* success */
 
 	--font-display: "Geist", "Helvetica Neue", system-ui, sans-serif;
 	--font-body: "Geist", "Helvetica Neue", system-ui, sans-serif;
 	--font-mono: "Geist Mono", ui-monospace, monospace;
 
-	--radius-md: 12px;
-	--radius-lg: 20px;
-	--shadow-frame: 0 30px 80px rgba(10, 10, 10, 0.16), 0 2px 6px rgba(10, 10, 10, 0.06);
+	--radius-md: 12px; /* buttons, inputs */
+	--radius-lg: 24px; /* cards */
+	--shadow-frame: 0 30px 80px rgba(15, 18, 34, 0.16), 0 2px 6px rgba(15, 18, 34, 0.08);
 
 	--duration-fast: 300ms;
 	--duration-normal: 550ms;

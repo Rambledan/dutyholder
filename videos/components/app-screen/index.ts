@@ -4,12 +4,42 @@
 
 export type Rect = { x: number; y: number; w: number; h: number };
 
+/** The smallest rect containing all of `rects`. */
+export function union(...rects: Rect[]): Rect {
+	const x = Math.min(...rects.map((r) => r.x));
+	const y = Math.min(...rects.map((r) => r.y));
+	const right = Math.max(...rects.map((r) => r.x + r.w));
+	const bottom = Math.max(...rects.map((r) => r.y + r.h));
+	return { x, y, w: right - x, h: bottom - y };
+}
+
+/** `rect` grown by `by` px on every side (or `[x, y]`). */
+export function pad(rect: Rect, by: number | [number, number]): Rect {
+	const [px, py] = typeof by === "number" ? [by, by] : by;
+	return { x: rect.x - px, y: rect.y - py, w: rect.w + px * 2, h: rect.h + py * 2 };
+}
+
+/** Highlight boxes recorded by the capture scripts (manifest.json). */
+export type Manifest = { screens: Record<string, { highlights: Record<string, Rect | null> }> };
+
+/** Look up a recorded highlight box, failing loudly if the capture missed it. */
+export function boxes(manifest: Manifest, screen: string): Record<string, Rect> {
+	const h = manifest.screens[screen]?.highlights ?? {};
+	return new Proxy(h, {
+		get(target, key: string) {
+			const r = target[key];
+			if (!r) throw new Error(`No "${key}" box recorded for ${screen}`);
+			return r;
+		},
+	}) as Record<string, Rect>;
+}
+
 export interface Screen {
 	src: string;
 	/** Page height in CSS px. 900 for a viewport shot, more for a full page. */
 	height?: number;
-	/** Areas to paint over (e.g. developer notes). */
-	masks?: Rect[];
+	/** Areas to paint over (e.g. developer notes), in the colour behind them. */
+	masks?: (Rect & { color?: string })[];
 	/** Text shown in the browser address bar. */
 	url?: string;
 }
@@ -45,7 +75,7 @@ export class AppScreen {
 		el.innerHTML = `
       <div style="position: relative; height: 100%; background: var(--color-bg); overflow: hidden;">
         <div data-ref="frame" style="position: absolute; left: ${(1920 - VIEW_W) / 2}px; top: ${FRAME_TOP}px; width: ${VIEW_W}px; transform: scale(${FRAME_SCALE}); transform-origin: 50% 0; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-frame); overflow: hidden; opacity: 0;">
-          <div style="height: ${CHROME_H}px; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; gap: 9px; padding: 0 20px; background: #f5f5f4;">
+          <div style="height: ${CHROME_H}px; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; gap: 9px; padding: 0 20px; background: #f4f5f8;">
             <span style="width: 12px; height: 12px; border-radius: 50%; background: #d6d3d1;"></span>
             <span style="width: 12px; height: 12px; border-radius: 50%; background: #d6d3d1;"></span>
             <span style="width: 12px; height: 12px; border-radius: 50%; background: #d6d3d1;"></span>
@@ -73,7 +103,7 @@ export class AppScreen {
 			stage.appendChild(img);
 			for (const m of s.masks ?? []) {
 				const cover = document.createElement("div");
-				cover.style.cssText = `position: absolute; left: ${m.x}px; top: ${m.y}px; width: ${m.w}px; height: ${m.h}px; background: #fff;`;
+				cover.style.cssText = `position: absolute; left: ${m.x}px; top: ${m.y}px; width: ${m.w}px; height: ${m.h}px; background: ${m.color ?? "#fff"};`;
 				stage.appendChild(cover);
 			}
 			this.viewport.appendChild(stage);
@@ -130,7 +160,7 @@ export class AppScreen {
 		s.zoom = k;
 	}
 
-	/** Draw a green ring around `rect` on the current screen. */
+	/** Draw an accent ring around `rect` on the current screen. */
 	ring(rect: Rect, delay = 0): HTMLElement {
 		const s = this.stages[this.current];
 		const pad = 8;
@@ -159,7 +189,7 @@ export class AppScreen {
 		}
 		const pill = document.createElement("div");
 		pill.textContent = text;
-		pill.style.cssText = `position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); background: var(--color-fg); color: #fff; font-family: var(--font-body); font-weight: 500; font-size: 36px; letter-spacing: -0.01em; padding: 20px 38px; border-radius: 999px; white-space: nowrap; box-shadow: 0 12px 32px rgba(10, 10, 10, 0.25); opacity: 0;`;
+		pill.style.cssText = `position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); background: var(--color-fg); color: #fff; font-family: var(--font-body); font-weight: 500; font-size: 36px; letter-spacing: -0.01em; padding: 20px 38px; border-radius: 999px; white-space: nowrap; box-shadow: 0 12px 32px rgba(15, 18, 34, 0.25); opacity: 0;`;
 		this.captionHost.appendChild(pill);
 		pill.animate(
 			[

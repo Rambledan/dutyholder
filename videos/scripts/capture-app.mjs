@@ -8,7 +8,7 @@
 // Output: videos/project_setup/assets/screens/*.png + manifest.json
 
 import { createHmac, randomBytes } from "node:crypto";
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -26,14 +26,14 @@ const BASE = "http://localhost:3000";
 const OUT = path.resolve(here, "../videos/project_setup/assets/screens");
 mkdirSync(OUT, { recursive: true });
 
-// The fictional people in the demo. Domains are reserved example domains.
-const ALEX = { name: "Alex Morgan", email: "alex@morgan-architects.example", company: "Morgan Architects", title: "Principal Designer" };
+// The fictional people in the demo. Domains use the reserved .test TLD.
+const ALEX = { name: "Alex Morgan", email: "alex.morgan@morgan-architects.test", company: "Morgan Architects", title: "Principal Designer" };
 const TEAM = [
-  { email: "priya.shah@wharfside.example", name: "Priya Shah", role: "client", discipline: "" },
-  { email: "tom.ellis@ellis-structures.example", name: "Tom Ellis", role: "designer", discipline: "structural" },
-  { email: "grace.okafor@okafor-fire.example", name: "Grace Okafor", role: "designer", discipline: "fire" },
-  { email: "ben.carter@carter-mep.example", name: "Ben Carter", role: "designer", discipline: "mep" },
-  { email: "site@northbank.example", name: "Northbank Construction Ltd", role: "principal_contractor", discipline: "", firm: true },
+  { email: "priya@wharfside.test", name: "Priya Shah", role: "client", discipline: "" },
+  { email: "tom@ellis-structures.test", name: "Tom Ellis", role: "designer", discipline: "structural" },
+  { email: "grace@okafor-fire.test", name: "Grace Okafor", role: "designer", discipline: "fire" },
+  { email: "ben@carter-mep.test", name: "Ben Carter", role: "designer", discipline: "mep" },
+  { email: "site@northbank.test", name: "Northbank Construction Ltd", role: "principal_contractor", discipline: "", firm: true },
 ];
 
 // RFC 6238 code from a base32 secret, as an authenticator app computes it.
@@ -56,7 +56,8 @@ async function freshCode(secret) {
 const manifest = { viewport: { width: 1440, height: 900 }, screens: {} };
 
 async function box(page, locator) {
-  const b = await locator.boundingBox();
+  // Next keeps hidden copies of earlier pages; only measure what's visible.
+  const b = await locator.filter({ visible: true }).first().boundingBox();
   if (!b) return null;
   const scroll = await page.evaluate(() => ({ x: window.scrollX, y: window.scrollY }));
   return { x: Math.round(b.x + scroll.x), y: Math.round(b.y + scroll.y), w: Math.round(b.width), h: Math.round(b.height) };
@@ -90,8 +91,10 @@ async function main() {
   const db = new Client({ connectionString: process.env.DEV_DATABASE_URL, ssl: { rejectUnauthorized: false } });
   await db.connect();
   const { rows: existing } = await db.query("select id from auth.users where lower(email) = $1", [ALEX.email]);
-  if (existing.length) throw new Error(`${ALEX.email} already exists in the dev database; change ALEX.email to record again.`);
-  const { rows: [{ token }] } = await db.query("select public.create_invite($1) as token", [ALEX.email]);
+  // A run that stopped after sign-up (before the project was made) carries on
+  // by signing in with the saved login.
+  const resume = existing.length > 0;
+  const token = resume ? null : (await db.query("select public.create_invite($1) as token", [ALEX.email])).rows[0].token;
   await db.end();
 
   const password = `Demo-${randomBytes(12).toString("base64url")}`;
@@ -108,6 +111,19 @@ async function main() {
   });
   const page = await context.newPage();
 
+  if (resume) {
+    const saved = JSON.parse(readFileSync(path.join(tmpdir(), "dutyholder-demo-account.json"), "utf8"));
+    if (saved.email !== ALEX.email) throw new Error(`${ALEX.email} exists but its saved login is missing.`);
+    Object.assign(manifest, JSON.parse(readFileSync(path.join(OUT, "manifest.json"), "utf8")));
+    await page.goto(`${BASE}/login`);
+    await page.getByLabel("Email").fill(saved.email);
+    await page.getByLabel("Password").fill(saved.password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.waitForURL(/mfa\/verify/);
+    await page.locator("#code").fill(await freshCode(saved.secret));
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.waitForURL(`${BASE}/`);
+  } else {
   // 1. Accept the invite and create an account.
   await page.goto(`${BASE}/signup?token=${token}`);
   await page.getByLabel("Full name").fill(ALEX.name);
@@ -135,6 +151,8 @@ async function main() {
   await shot(page, "03-recovery-codes", { highlights: { codes: page.locator("ul.font-mono") } });
   await page.getByRole("button", { name: "Continue" }).click();
   await page.waitForURL(`${BASE}/`);
+  writeFileSync(path.join(OUT, "manifest.json"), JSON.stringify(manifest, null, 2));
+  }
 
   // 3. Save company details once (used on every project), then home.
   await page.goto(`${BASE}/account`);
@@ -144,33 +162,46 @@ async function main() {
   await page.getByText("Saved.").waitFor();
   await page.goto(`${BASE}/`);
   await page.getByText("No projects yet").waitFor();
-  await shot(page, "04-home", { highlights: { newProject: page.getByRole("link", { name: "New project" }) } });
+  await shot(page, "04-home", { highlights: {
+    newProject: page.getByRole("main").getByRole("link", { name: "New project" }),
+    projects: page.locator('[data-slot="card"]').filter({ hasText: "Your projects" }),
+  } });
 
   // 4. New project: set-up questions, with an info mark open.
-  await page.getByRole("link", { name: "New project" }).click();
+  await page.getByRole("main").getByRole("link", { name: "New project" }).click();
   await page.waitForURL(/\/projects\/new/);
   await page.getByLabel("Project name").fill("The Old Mill");
   await page.getByLabel("Site address").fill("Canal Wharf, Leeds");
   await page.locator("#description").fill("Conversion of a three-storey Victorian mill into offices, with a new stair core and rooftop plant.");
   await page.locator("#construction_start_date").fill("2027-03-01");
-  await shot(page, "05-new-project", { highlights: { name: page.getByLabel("Project name"), description: page.locator("#description") } });
+  const devNote = page.getByText("Phase 8 will use this");
+  await shot(page, "05-new-project", { highlights: { name: page.getByLabel("Project name"), description: page.locator("#description"), devNote } });
 
   const domesticInfo = page.getByRole("button", { name: 'What does "Domestic client" mean?' });
   await domesticInfo.scrollIntoViewIfNeeded();
   await page.mouse.wheel(0, -120);
   await domesticInfo.hover();
   await page.getByText("Read more in Help").waitFor();
-  await shot(page, "06-help-mark", { highlights: { popover: page.locator('[data-slot="popover-content"]'), question: page.getByText("Is the client a domestic client?") } });
+  await shot(page, "06-help-mark", { highlights: { popover: page.locator('[data-slot="popover-content"]'), question: page.getByText("Is the client a domestic client?"), devNote } });
   await page.mouse.move(5, 5);
 
   const create = page.getByRole("button", { name: "Create project" });
   await create.scrollIntoViewIfNeeded();
-  await shot(page, "07-new-project-questions", { highlights: { create, contractors: page.getByText("How many contractors will work on the project?") } });
+  await shot(page, "07-new-project-questions", { highlights: {
+    create,
+    contractors: page.getByText("How many contractors will work on the project?"),
+    firstQuestion: page.getByText("Is any of this higher-risk building work?"),
+    lastAnswer: page.getByText("More than one (or likely to be)"),
+    devNote,
+  } });
   await create.click();
   await page.waitForURL(/\/projects\/[0-9a-f-]{36}$/);
   const projectUrl = page.url();
   await page.getByText("Your tasks").first().waitFor();
-  await shot(page, "08-project-created", { highlights: { title: page.getByRole("heading", { level: 1 }) } });
+  await shot(page, "08-project-created", { highlights: {
+    title: page.getByRole("heading", { level: 1 }),
+    setup: page.locator('[data-slot="card"]').filter({ hasText: "Jurisdiction" }).first(),
+  } });
 
   // 5. Add the team.
   for (const [i, m] of TEAM.entries()) {
@@ -182,7 +213,7 @@ async function main() {
     if (i === 2) {
       await page.locator("#email").scrollIntoViewIfNeeded();
       await page.mouse.wheel(0, 120);
-      await shot(page, "09-add-member", { highlights: { form: page.locator("form").filter({ has: page.locator("#email") }), add: page.getByRole("button", { name: "Add to team" }) } });
+      await shot(page, "09-add-member", { highlights: { form: page.locator("form").filter({ has: page.locator("#email") }), add: page.getByRole("button", { name: "Add to team" }), firm: page.getByText(/held by a firm/) } });
     }
     await page.getByRole("button", { name: "Add to team" }).click();
     await page.getByText(m.email).first().waitFor();
@@ -193,17 +224,24 @@ async function main() {
   await page.goto(projectUrl);
   const clientRow = page.locator("tr").filter({ hasText: TEAM[0].email });
   await clientRow.getByRole("button", { name: "Invite" }).click();
-  await clientRow.locator("input[readonly]").waitFor();
-  await blur(page, "input[readonly]");
+  await clientRow.getByText(/Invited/).first().waitFor();
+  // Reload so a one-off "couldn't send" notice (email not set up locally)
+  // doesn't appear in the video; the invite itself is recorded.
+  await page.reload();
   const teamCard = page.locator('[data-slot="card"]').filter({ hasText: "Everyone on the project can see this list." });
   await teamCard.scrollIntoViewIfNeeded();
-  await shot(page, "10-team-invite", { highlights: { team: teamCard.locator("table"), invite: clientRow } });
+  await shot(page, "10-team-invite", { highlights: {
+    team: teamCard.locator("table"),
+    invite: page.locator("tr").filter({ hasText: TEAM[0].email }),
+    inviteButton: page.locator("tr").filter({ hasText: TEAM[1].email }).getByRole("button", { name: "Invite" }),
+  } });
 
   // 7. Everyone's checklists, worked out automatically.
   await page.goto(projectUrl);
   await page.getByText("Each person's duties under Part 2A.").waitFor();
   await shot(page, "11-project-full", { fullPage: true, highlights: {
     checklists: page.getByRole("heading", { name: /Checklists/ }),
+    alex: page.locator('[data-slot="card"]').filter({ hasText: "Alex Morgan" }).filter({ hasText: "Principal designer ·" }),
     priya: page.locator('[data-slot="card"]').filter({ hasText: "Priya Shah" }).filter({ hasText: "Client ·" }),
     grace: page.locator('[data-slot="card"]').filter({ hasText: "Grace Okafor" }).filter({ hasText: "Designer ·" }),
   } });
@@ -212,17 +250,13 @@ async function main() {
   await page.goto(`${projectUrl}/dashboard`);
   await page.getByText("People × duties").waitFor();
   await shot(page, "12-dashboard", { fullPage: true, highlights: {
-    progress: page.locator('[data-slot="card"]').filter({ hasText: " done" }).first(),
+    stats: page.locator("div.grid").filter({ hasText: "Duties complete" }).filter({ hasText: "Not started" }).last(),
     // Next keeps hidden copies of earlier pages; only the visible grid counts.
     grid: page.getByRole("table"),
   } });
 
   writeFileSync(path.join(OUT, "manifest.json"), JSON.stringify(manifest, null, 2));
   await browser.close();
-  // Saved last: editing .env.local makes the dev server reload, which would
-  // disturb the two-factor set-up if done mid-flow.
-  appendFileSync(path.join(appRoot, ".env.local"),
-    `\n# Fictional demo account used to record the project-setup video.\nDEMO_USER_EMAIL=${ALEX.email}\nDEMO_USER_PASSWORD=${password}\nDEMO_USER_TOTP_SECRET=${secret}\n`);
   console.log(`Done. ${Object.keys(manifest.screens).length} screens in ${OUT}`);
 }
 

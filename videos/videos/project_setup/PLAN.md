@@ -67,3 +67,10 @@
 - Timeline: 12 segments with fade transitions, style dutyholder, about 81s at the placeholder timings.
 - Voiceover: drafted from the plan script and written to voiceover_script/script.md. Provider: Gemini via
   OpenRouter, voice Charon.
+
+### 2026-11-02: Re-recorded with the new design system
+- The app now uses the Dutyholder design system (indigo accent, cool grey canvas, sidebar). Re-recorded every
+  screen with new fictional .test accounts; the old ones in the dev database can't be reused.
+- Style tokens updated to match src/app/globals.css (accent #4f46e5, canvas #eef0f4).
+- Segments now read zoom and highlight areas from the boxes in manifest.json, so a re-recording no longer needs
+  hand-edited coordinates.

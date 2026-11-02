@@ -27,7 +27,7 @@ mkdirSync(OUT, { recursive: true });
 mkdirSync(WORK, { recursive: true });
 
 const ALEX = JSON.parse(readFileSync(path.join(tmpdir(), "dutyholder-demo-account.json"), "utf8"));
-const TOM = { name: "Tom Ellis", email: "tom.ellis@ellis-structures.example", company: "Ellis Structures", title: "Director, Structural Engineer" };
+const TOM = { name: "Tom Ellis", email: "tom@ellis-structures.test", company: "Ellis Structures", title: "Director, Structural Engineer" };
 
 // Fictional answers, written as a structural engineer would.
 const ANSWERS = {
@@ -293,6 +293,7 @@ async function tasks(page, projectId) {
   await page.getByText("You're done for now").waitFor();
   await shot(page, "09-tasks-done", { highlights: {
     done: page.getByText("You're done for now"),
+    submitted: page.locator("li").filter({ hasText: "Submit your competence statement" }),
     list: page.locator("ul.divide-y").last(),
   } });
 
@@ -302,7 +303,11 @@ async function tasks(page, projectId) {
   await page.getByLabel("Job title").fill(TOM.title);
   await page.getByRole("button", { name: "Save details" }).click();
   await page.getByText("Saved.").waitFor();
-  await shot(page, "10-account", { fullPage: true, highlights: {} });
+  await shot(page, "10-account", { fullPage: true, highlights: {
+    details: page.locator('[data-slot="card"]').filter({ hasText: "Your details" }),
+    passport: page.locator('[data-slot="card"]').filter({ hasText: "Competence passport" }),
+    partners: page.locator('[data-slot="card"]').filter({ hasText: "Who you work with" }),
+  } });
 }
 
 main().catch((err) => {
