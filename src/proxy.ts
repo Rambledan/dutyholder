@@ -86,5 +86,5 @@ function setLastSeen(response: NextResponse, nowMs: number) {
 export const config = {
   // Run on everything except Next.js internals, static files and the cron
   // routes (which have no user session and check CRON_SECRET themselves).
-  matcher: ["/((?!_next/static|_next/image|api/cron/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|api/cron/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|mp4)$).*)"],
 };

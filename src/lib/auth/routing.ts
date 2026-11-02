@@ -7,7 +7,7 @@ export const INACTIVITY_LIMIT_MS = 12 * 60 * 60 * 1000; // 12 hours
 const PUBLIC_PATHS = ["/login", "/signup"];
 // Pages open to everyone at every stage of login (signed out, part-way
 // through two-factor, or fully signed in). They show no project data.
-const OPEN_PATHS = ["/help"];
+const OPEN_PATHS = ["/help", "/demo"];
 // Pages for someone who has typed their password but not yet their 2FA code.
 const ENROL_PATH = "/mfa/enrol";
 const VERIFY_PATHS = ["/mfa/verify", "/mfa/recover"];
