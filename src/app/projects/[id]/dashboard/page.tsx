@@ -9,6 +9,7 @@ import { PageShell } from "@/components/projects/page-shell";
 import { requireAal2 } from "@/lib/auth/server";
 import { nextChase, type ChaseState } from "@/lib/chase/plan";
 import { londonParts, projectNow } from "@/lib/clock";
+import { isWaiting } from "@/lib/deadlines";
 import { STATUS_LABELS, rag, roleLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { StatCard } from "@/components/ui/stat-card";
@@ -29,6 +30,7 @@ export default function DashboardPage(props: PageProps<"/projects/[id]/dashboard
 const DOT = { red: "bg-destructive", amber: "bg-warning", green: "bg-success" };
 const KIND_LABEL: Record<string, string> = {
   nudge: "Nudge", reminder: "Reminder", firm: "Firm reminder", owner_digest: "Digest", manual: "Chased by you",
+  deadline: "Legal deadline",
 };
 const shortDate = (d: string | Date) =>
   new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Europe/London" });
@@ -45,7 +47,7 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
         .select("id, name, clock_offset_days, construction_start_date, is_demo, demo_started_at, demo_state")
         .eq("id", id).maybeSingle(),
       supabase.from("project_members")
-        .select("id, project_id, user_id, email, display_name, role, is_owner, chasing_paused, invited_at, created_at")
+        .select("id, project_id, user_id, email, display_name, role, is_owner, chasing_paused, invited_at, created_at, appointment_ended_on")
         .eq("project_id", id).is("removed_at", null).order("created_at"),
       supabase.from("checklist_items")
         .select("id, project_id, member_id, template_code, status, due_date, duty_templates(title, item_type, legal_reference, sort_order)")
@@ -75,6 +77,7 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
     items: (items ?? []).map((i) => ({
       id: i.id, project_id: i.project_id, member_id: i.member_id, code: i.template_code, status: i.status,
       title: i.duty_templates?.title ?? "", item_type: i.duty_templates?.item_type ?? "form", due_date: i.due_date,
+      legal_reference: i.duty_templates?.legal_reference ?? "",
     })),
     appointments: [],
     pending_signatures: (signatories ?? [])
@@ -93,6 +96,9 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
   const all = items ?? [];
   const green = all.filter((i) => rag(i.status) === "green").length;
   const amber = all.filter((i) => rag(i.status) === "amber").length;
+  // Legal clocks that haven't started (handover, completion statements)
+  // aren't behind; they show grey until their trigger event.
+  const waiting = all.filter((i) => rag(i.status) === "red" && isWaiting(i.template_code, i.due_date)).length;
 
   return (
     <div className="space-y-6">
@@ -130,8 +136,8 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
           caption={`Across ${members.length} ${members.length === 1 ? "person" : "people"} on this project.`} />
         <StatCard label="In progress" value={String(amber)} tone="warning" badge="Awaiting review"
           caption="Started, submitted, or waiting for your review." />
-        <StatCard label="Not started" value={String(all.length - green - amber)} tone="danger" badge="Needs chasing"
-          caption="Not started, or sent back for more information." />
+        <StatCard label="Not started" value={String(all.length - green - amber - waiting)} tone="danger" badge="Needs chasing"
+          caption={`Not started, or sent back for more information.${waiting ? ` ${waiting} more wait for a trigger date (grey).` : ""}`} />
       </div>
 
       <Card>
@@ -139,6 +145,7 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
           <CardTitle className="flex items-center gap-1.5">People × duties <HelpLink topic="statuses" /></CardTitle>
           <CardDescription>
             <Term id="reminders">Reminders</Term> go out automatically on weekdays, 8am–6pm, at most one email per person per day, signed on your behalf.
+            Legal deadlines are chased every day, weekends included.
             Pause anyone you&apos;d rather speak to yourself.
           </CardDescription>
         </CardHeader>
@@ -171,14 +178,18 @@ async function Dashboard({ params }: { params: PageProps<"/projects/[id]/dashboa
                         <div className="font-medium">{nameOf(m)}</div>
                         <div className="text-xs text-muted-foreground">
                           {roleLabel(m.role)} · {done}/{mine.length}{m.is_owner && " · owner"}
+                          {m.appointment_ended_on && ` · appointment ended ${shortDate(m.appointment_ended_on)}`}
                         </div>
                       </td>
                       {columns.map((c) => {
                         const item = mine.find((i) => i.template_code === c.code);
                         return (
                           <td key={c.code} className="border-t px-1 text-center">
-                            {item ? (
-                              <span title={`${c.title}: ${STATUS_LABELS[item.status]}`}
+                            {item && rag(item.status) === "red" && isWaiting(item.template_code, item.due_date) ? (
+                              <span title={`${c.title}: not due yet`}
+                                className="inline-block size-3 rounded-full border border-border bg-muted" />
+                            ) : item ? (
+                              <span title={`${c.title}: ${STATUS_LABELS[item.status]}${item.due_date ? `, due ${shortDate(item.due_date)}` : ""}`}
                                 className={cn("inline-block size-3 rounded-full", DOT[rag(item.status)])} />
                             ) : (
                               <span className="text-muted-foreground/40">·</span>

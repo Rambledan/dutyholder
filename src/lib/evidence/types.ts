@@ -3,10 +3,12 @@
 export type PackMember = {
   id: string; name: string; email: string; role: string | null; discipline: string | null;
   is_firm: boolean; is_owner: boolean; removed_at: string | null;
+  appointment_ended_on?: string | null; phone?: string | null; company?: string | null;
 };
 export type PackItem = {
   id: string; member_id: string; code: string; title: string; legal_reference: string; item_type: string;
   status: string; answer: { text?: string } | null; completed_at: string | null; competence_statement_id: string | null;
+  due_date?: string | null;
 };
 export type PackSignature = {
   checklist_item_id: string; member_id: string; typed_name: string; statement: string; statement_sha256: string;
@@ -43,6 +45,8 @@ export type PackData = {
     id: string; name: string; address: string; description: string; is_domestic_client: boolean;
     domestic_duties_to_pd: boolean; expected_contractors: number; cdm_pd_certified: boolean;
     construction_start_date: string | null; retention_years: number; is_demo: boolean; created_at: string;
+    bc_application_date?: string | null; construction_started_on?: string | null;
+    work_completed_on?: string | null; occupation_date?: string | null;
   };
   members: PackMember[];
   items: PackItem[];

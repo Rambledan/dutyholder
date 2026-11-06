@@ -12,8 +12,11 @@ import { STATUS_LABELS } from "@/lib/labels";
 import { loadStatement } from "@/lib/statements";
 import { KIND_BY_CODE, KIND_LABELS } from "@/lib/letters";
 import { loadMyTasks, nextTask } from "@/lib/tasks";
+import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { HelpLink } from "@/components/help/help-link";
+import { londonParts, projectNow } from "@/lib/clock";
+import { COMPLETION_CODES, DEADLINES, countdownLabel, daysLeft, longDate } from "@/lib/deadlines";
 
 export const metadata = { title: "Task · Dutyholder" };
 
@@ -34,6 +37,8 @@ const FORM_PROMPTS: Record<string, string> = {
   "PD-11G-INDIVIDUAL": "Name the individual who will manage the principal designer role, and their position in the firm.",
   "PD-11M-MATRIX": "List each part of the design and the designer responsible for it.",
   "PD-11M-HANDOVER": "Explain the arrangements you made to plan, manage and monitor the design work.",
+  "PC-11N-HANDOVER": "Explain the arrangements you made to plan, manage and monitor the building work.",
+  "PC-16-OCCUPATION": "Record the notice: which building control body, the date you gave notice, which parts will be occupied and from when.",
 };
 
 async function TaskView({ params }: { params: Params }) {
@@ -41,7 +46,7 @@ async function TaskView({ params }: { params: Params }) {
   const { id: projectId, itemId } = await params;
 
   const [{ data: project }, { tasks, members }, { data: item }, { data: profile }] = await Promise.all([
-    supabase.from("projects").select("id, name, is_higher_risk").eq("id", projectId).maybeSingle(),
+    supabase.from("projects").select("id, name, is_higher_risk, clock_offset_days, is_demo, demo_started_at").eq("id", projectId).maybeSingle(),
     loadMyTasks(supabase, projectId, userId),
     supabase.from("checklist_items").select("answer, competence_statement_id").eq("id", itemId).maybeSingle(),
     supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
@@ -54,20 +59,53 @@ async function TaskView({ params }: { params: Params }) {
   const nextHref = next ? `/projects/${projectId}/tasks/${next.id}` : `/projects/${projectId}/tasks`;
   const done = task.status === "complete" || task.status === "submitted";
 
+  const isCompletion = COMPLETION_CODES.includes(task.code);
+  const deadline = DEADLINES[task.code];
+  const today = londonParts(projectNow(project)).date;
+
   let body: React.ReactNode;
   if (!task.available) {
-    body = <p className="text-sm text-muted-foreground">This step arrives in the next release.</p>;
+    body = (
+      <div className="space-y-2 text-sm">
+        <p className="font-medium">Not due yet</p>
+        <p className="text-muted-foreground">This task starts {task.waitingFor}</p>
+        {isCompletion && (
+          <p className="text-muted-foreground">
+            The statement is filled in for you from the project&apos;s records: the completion date
+            {task.code === "CL-16-COMPLETION" ? "" : " and your appointment dates"}. Signing it then takes one click.
+          </p>
+        )}
+      </div>
+    );
   } else if (task.itemType === "acknowledge") {
     if (done) {
       const { data: sig } = await supabase.from("signatures")
-        .select("typed_name, signed_at, statement_sha256").eq("checklist_item_id", itemId).maybeSingle();
+        .select("typed_name, signed_at, statement, statement_sha256").eq("checklist_item_id", itemId).maybeSingle();
       body = sig ? (
-        <p className="text-sm">
-          Signed by <strong>{sig.typed_name}</strong> on{" "}
-          {new Date(sig.signed_at).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" })}.
-          <span className="mt-1 block font-mono text-xs text-muted-foreground">Wording fingerprint {sig.statement_sha256.slice(0, 16)}…</span>
-        </p>
+        <div className="space-y-3 text-sm">
+          {isCompletion && <blockquote className="rounded-lg border bg-muted/40 p-3">{sig.statement}</blockquote>}
+          <p>
+            Signed by <strong>{sig.typed_name}</strong> on{" "}
+            {new Date(sig.signed_at).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" })}.
+            <span className="mt-1 block font-mono text-xs text-muted-foreground">Wording fingerprint {sig.statement_sha256.slice(0, 16)}…</span>
+          </p>
+        </div>
       ) : null;
+    } else if (isCompletion) {
+      // The exact words, filled in by the database, so what you read is
+      // what you sign.
+      const { data: statement, error } = await supabase.rpc("statement_to_sign", { p_item_id: itemId });
+      body = error || !statement ? (
+        <p className="rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm">
+          {error?.message ?? "This statement can't be prepared yet."}
+        </p>
+      ) : (
+        <div className="space-y-4">
+          <blockquote className="rounded-lg border bg-muted/40 p-3 text-sm">{statement}</blockquote>
+          <AcknowledgeForm projectId={projectId} itemId={itemId} fullName={profile?.full_name ?? ""} nextHref={nextHref}
+            confirmLabel="I confirm this statement is true, to the best of my knowledge." />
+        </div>
+      );
     } else {
       body = <AcknowledgeForm projectId={projectId} itemId={itemId} fullName={profile?.full_name ?? ""} nextHref={nextHref} />;
     }
@@ -215,6 +253,13 @@ async function TaskView({ params }: { params: Params }) {
             } />
           </CardTitle>
           <CardDescription className="text-base">{task.explanation}</CardDescription>
+          {deadline && task.dueDate && !done && (
+            <p className={cn("rounded-lg px-3 py-2 text-sm font-medium",
+              daysLeft(task.dueDate, today) <= 2 ? "bg-destructive-soft text-destructive" : "bg-warning-soft text-warning")}>
+              Legal deadline {longDate(task.dueDate)} · {countdownLabel(daysLeft(task.dueDate, today))}
+              <span className="block text-xs font-normal">The clock runs {deadline.clock}.</span>
+            </p>
+          )}
           {task.legislationUrl && (
             <a href={task.legislationUrl} target="_blank" rel="noopener noreferrer"
               className="text-sm text-primary underline-offset-4 hover:underline">

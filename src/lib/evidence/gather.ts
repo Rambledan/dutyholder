@@ -19,12 +19,12 @@ export async function gatherPack(db: Db, projectId: string): Promise<PackData> {
   if (projectError || !project) throw new Error(projectError?.message ?? "Project not found");
   const members = await one(db.from("project_members").select("*").eq("project_id", projectId));
   const userIds = members.map((m) => m.user_id).filter((x): x is string => Boolean(x));
-  const profiles = userIds.length ? await one(db.from("profiles").select("id, full_name").in("id", userIds)) : [];
+  const profiles = userIds.length ? await one(db.from("profiles").select("id, full_name, company, phone").in("id", userIds)) : [];
   const nameOfUser = (id: string | null) => profiles.find((p) => p.id === id)?.full_name || null;
   const nameOfMember = (m: (typeof members)[number]) => nameOfUser(m.user_id) || m.display_name || m.email;
 
   const items = await one(db.from("checklist_items")
-    .select("id, member_id, template_code, status, answer, completed_at, competence_statement_id, duty_templates(title, legal_reference, item_type)")
+    .select("id, member_id, template_code, status, answer, completed_at, competence_statement_id, due_date, duty_templates(title, legal_reference, item_type)")
     .eq("project_id", projectId).is("withdrawn_at", null));
   const signatures = await one(db.from("signatures").select("*").eq("project_id", projectId));
   const reviews = await one(db.from("reviews").select("*").eq("project_id", projectId).order("created_at"));
@@ -73,12 +73,15 @@ export async function gatherPack(db: Db, projectId: string): Promise<PackData> {
     members: members.map((m) => ({
       id: m.id, name: nameOfMember(m), email: m.email, role: m.role, discipline: m.discipline,
       is_firm: m.is_firm, is_owner: m.is_owner, removed_at: m.removed_at,
+      appointment_ended_on: m.appointment_ended_on,
+      phone: profiles.find((p) => p.id === m.user_id)?.phone ?? null,
+      company: profiles.find((p) => p.id === m.user_id)?.company ?? null,
     })),
     items: items.map((i) => ({
       id: i.id, member_id: i.member_id, code: i.template_code, title: i.duty_templates?.title ?? "",
       legal_reference: i.duty_templates?.legal_reference ?? "", item_type: i.duty_templates?.item_type ?? "form",
       status: i.status, answer: i.answer as { text?: string } | null, completed_at: i.completed_at,
-      competence_statement_id: i.competence_statement_id,
+      competence_statement_id: i.competence_statement_id, due_date: i.due_date,
     })),
     signatures: signatures.map((g) => ({ ...g, ip_address: (g.ip_address as string | null) ?? null })),
     statements,

@@ -8,6 +8,8 @@ import { ITEM_TYPE_LABELS, STATUS_LABELS, rag } from "@/lib/labels";
 import { KIND_LABELS, PARTY_LABELS } from "@/lib/letters";
 import { loadMyTasks, nextTask, progress } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
+import { londonParts, projectNow } from "@/lib/clock";
+import { countdownLabel, daysLeft } from "@/lib/deadlines";
 import { Term } from "@/components/help/term";
 import { HelpLink } from "@/components/help/help-link";
 
@@ -28,12 +30,13 @@ async function Tasks({ params }: { params: PageProps<"/projects/[id]/tasks">["pa
   const { id } = await params;
 
   const [{ data: project }, { tasks }] = await Promise.all([
-    supabase.from("projects").select("id, name, address").eq("id", id).maybeSingle(),
+    supabase.from("projects").select("id, name, address, clock_offset_days, is_demo, demo_started_at").eq("id", id).maybeSingle(),
     loadMyTasks(supabase, id, userId),
   ]);
   if (!project) notFound();
 
   const { done, total } = progress(tasks);
+  const today = londonParts(projectNow(project)).date;
   const next = nextTask(tasks);
 
   // Letters this person must sign as appointee (they have no checklist item
@@ -98,23 +101,27 @@ async function Tasks({ params }: { params: PageProps<"/projects/[id]/tasks">["pa
         {tasks.map((t) => {
           const inner = (
             <>
-              <span className={cn("mt-1.5 size-2.5 shrink-0 rounded-full", RAG_DOT[rag(t.status)])} />
+              <span className={cn("mt-1.5 size-2.5 shrink-0 rounded-full",
+                t.available ? RAG_DOT[rag(t.status)] : "border border-border bg-muted")} />
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{t.title}</span>
                 <span className="block text-xs text-muted-foreground">
                   {t.legalReference} · {ITEM_TYPE_LABELS[t.itemType]} ·{" "}
-                  {t.available ? STATUS_LABELS[t.status] : "Available in the next release"}
+                  {t.available ? STATUS_LABELS[t.status] : "Not due yet"}
                 </span>
               </span>
+              {t.dueDate && t.status !== "complete" && t.status !== "submitted" && (
+                <span className={cn("h-fit shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
+                  daysLeft(t.dueDate, today) <= 2 ? "bg-destructive-soft text-destructive" : "bg-warning-soft text-warning")}>
+                  {countdownLabel(daysLeft(t.dueDate, today))}
+                </span>
+              )}
             </>
           );
           return (
             <li key={t.id}>
-              {t.available ? (
-                <Link href={`/projects/${id}/tasks/${t.id}`} className="flex gap-3 p-4 text-sm hover:bg-muted/50">{inner}</Link>
-              ) : (
-                <div className="flex gap-3 p-4 text-sm opacity-60">{inner}</div>
-              )}
+              <Link href={`/projects/${id}/tasks/${t.id}`}
+                className={cn("flex gap-3 p-4 text-sm hover:bg-muted/50", !t.available && "text-muted-foreground")}>{inner}</Link>
             </li>
           );
         })}

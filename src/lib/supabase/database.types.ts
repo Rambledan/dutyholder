@@ -706,6 +706,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           added_by: string | null
+          appointment_ended_on: string | null
           chasing_paused: boolean
           created_at: string
           declined_at: string | null
@@ -725,6 +726,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           added_by?: string | null
+          appointment_ended_on?: string | null
           chasing_paused?: boolean
           created_at?: string
           declined_at?: string | null
@@ -744,6 +746,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           added_by?: string | null
+          appointment_ended_on?: string | null
           chasing_paused?: boolean
           created_at?: string
           declined_at?: string | null
@@ -773,9 +776,11 @@ export type Database = {
       projects: {
         Row: {
           address: string
+          bc_application_date: string | null
           cdm_pd_certified: boolean
           clock_offset_days: number
           construction_start_date: string | null
+          construction_started_on: string | null
           created_at: string
           created_by: string | null
           demo_started_at: string | null
@@ -789,15 +794,19 @@ export type Database = {
           is_higher_risk: boolean
           jurisdiction: Database["public"]["Enums"]["jurisdiction"]
           name: string
+          occupation_date: string | null
           retention_years: number
           status: Database["public"]["Enums"]["project_status"]
           updated_at: string
+          work_completed_on: string | null
         }
         Insert: {
           address?: string
+          bc_application_date?: string | null
           cdm_pd_certified?: boolean
           clock_offset_days?: number
           construction_start_date?: string | null
+          construction_started_on?: string | null
           created_at?: string
           created_by?: string | null
           demo_started_at?: string | null
@@ -814,12 +823,15 @@ export type Database = {
           retention_years?: number
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
+          work_completed_on?: string | null
         }
         Update: {
           address?: string
+          bc_application_date?: string | null
           cdm_pd_certified?: boolean
           clock_offset_days?: number
           construction_start_date?: string | null
+          construction_started_on?: string | null
           created_at?: string
           created_by?: string | null
           demo_started_at?: string | null
@@ -833,9 +845,11 @@ export type Database = {
           is_higher_risk?: boolean
           jurisdiction?: Database["public"]["Enums"]["jurisdiction"]
           name?: string
+          occupation_date?: string | null
           retention_years?: number
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
+          work_completed_on?: string | null
         }
         Relationships: []
       }
@@ -1325,6 +1339,7 @@ export type Database = {
         Returns: string
       }
       start_competence_draft: { Args: never; Returns: string }
+      statement_to_sign: { Args: { p_item_id: string }; Returns: string }
       submit_competence: { Args: { p_item_id: string }; Returns: string }
       submit_competence_passport: { Args: never; Returns: string }
       use_recovery_code: { Args: { p_code: string }; Returns: boolean }

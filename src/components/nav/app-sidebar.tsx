@@ -2,6 +2,7 @@ import { isFullySignedIn, requireAal2 } from "@/lib/auth/server";
 import { DEMO_ENABLED } from "@/lib/features";
 import type { DutyholderRole } from "@/lib/labels";
 import type { ProjectScope } from "@/lib/nav";
+import { isWaiting } from "@/lib/deadlines";
 import { SidebarNav } from "./sidebar-nav";
 
 // Loads the projects this person can see and what they hold on each, then
@@ -15,7 +16,7 @@ export async function AppSidebar({ optional = false }: { optional?: boolean }) {
     supabase.from("project_members").select("id, project_id, role, is_owner").eq("user_id", userId).is("removed_at", null),
   ]);
   const { data: myItems } = myRoles?.length
-    ? await supabase.from("checklist_items").select("project_id, status")
+    ? await supabase.from("checklist_items").select("project_id, status, template_code, due_date")
         .in("member_id", myRoles.map((r) => r.id)).is("withdrawn_at", null)
     : { data: [] };
 
@@ -28,7 +29,9 @@ export async function AppSidebar({ optional = false }: { optional?: boolean }) {
         name: p.name,
         roles: mine.map((r) => r.role).filter((r): r is DutyholderRole => r !== null),
         isOwner: mine.some((r) => r.is_owner),
-        openTasks: (myItems ?? []).filter((i) => i.project_id === p.id && i.status !== "complete" && i.status !== "submitted").length,
+        // Legal clocks that haven't started yet aren't counted as open.
+        openTasks: (myItems ?? []).filter((i) => i.project_id === p.id && i.status !== "complete" && i.status !== "submitted"
+          && !isWaiting(i.template_code, i.due_date)).length,
       };
     });
 

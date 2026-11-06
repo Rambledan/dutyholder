@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { addMember, inviteMember } from "../actions";
 import { KIND_LABELS, type AppointmentKind } from "@/lib/letters";
 import { HelpLink } from "@/components/help/help-link";
+import { londonParts, projectNow } from "@/lib/clock";
+import { DEADLINES, countdownLabel, daysLeft, isWaiting, longDate } from "@/lib/deadlines";
 
 export const metadata = { title: "Project · Dutyholder" };
 
@@ -40,13 +42,13 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
     supabase.from("projects").select("*").eq("id", id).maybeSingle(),
     supabase
       .from("project_members")
-      .select("id, user_id, email, display_name, role, discipline, is_firm, is_owner, created_at, invited_at, declined_at")
+      .select("id, user_id, email, display_name, role, discipline, is_firm, is_owner, created_at, invited_at, declined_at, appointment_ended_on")
       .eq("project_id", id)
       .is("removed_at", null)
       .order("created_at"),
     supabase
       .from("checklist_items")
-      .select("id, member_id, status, withdrawn_at, duty_templates(code, title, legal_reference, item_type, sort_order)")
+      .select("id, member_id, status, withdrawn_at, due_date, duty_templates(code, title, legal_reference, item_type, sort_order)")
       .eq("project_id", id),
   ]);
   if (!project || !members) notFound();
@@ -78,6 +80,13 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
   const withdrawnCount = isOwner ? (items ?? []).length - allActiveItems.length : 0;
   const visibleMembers = members.filter((m) => activeItems.some((i) => i.member_id === m.id));
 
+  // Statutory clocks that have started, soonest first (owners see everyone's).
+  const today = londonParts(projectNow(project)).date;
+  const clocks = activeItems
+    .filter((i) => i.due_date && i.duty_templates && DEADLINES[i.duty_templates.code])
+    .sort((a, b) => a.due_date!.localeCompare(b.due_date!));
+  const fmtDate = (d: string | null) => (d ? longDate(d) : "Not recorded");
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -99,6 +108,11 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
           {isOwner && (
             <Link href={`/projects/${id}/exports`} className={buttonVariants({ variant: "outline" })}>
               Evidence pack
+            </Link>
+          )}
+          {isOwner && (
+            <Link href={`/projects/${id}/dates`} className={buttonVariants({ variant: "outline" })}>
+              Key dates
             </Link>
           )}
           {isOwner && (
@@ -124,12 +138,57 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
             <Fact label="CDM principal designer certification" value={project.cdm_pd_certified ? "Yes" : "No"} />
             <Fact label="Higher-risk" value="No" />
             <Fact label="Records kept for" value={`${project.retention_years} years after the project`} />
-            <Fact label="Construction starts"
+            <Fact label="Construction start (planned)"
               value={project.construction_start_date
                 ? new Date(project.construction_start_date).toLocaleDateString("en-GB", { dateStyle: "long" })
                 : "Not set"} />
           </dl>
           {project.description && <p className="mt-4 whitespace-pre-line text-sm">{project.description}</p>}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-1.5">Key dates and deadlines <HelpLink topic="deadlines" /></CardTitle>
+          <CardDescription>Each date starts a legal clock for the person who has to act.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+            <Fact label="Building control application" value={fmtDate(project.bc_application_date)} />
+            <Fact label="Construction started" value={fmtDate(project.construction_started_on)} />
+            <Fact label="Early occupation" value={project.occupation_date ? longDate(project.occupation_date) : "None planned"} />
+            <Fact label="Work completed" value={fmtDate(project.work_completed_on)} />
+          </dl>
+          {clocks.length > 0 ? (
+            <ul className="divide-y rounded-lg border text-sm">
+              {clocks.map((i) => {
+                const m = members.find((x) => x.id === i.member_id);
+                const isDone = i.status === "complete" || i.status === "submitted";
+                const days = daysLeft(i.due_date!, today);
+                return (
+                  <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
+                    <span className="min-w-0">
+                      <span className="block font-medium">{i.duty_templates?.title}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {m ? nameOf(m) : ""} · {i.duty_templates?.legal_reference} · due {longDate(i.due_date!)}
+                      </span>
+                    </span>
+                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium",
+                      isDone ? RAG_CLASSES.green : days <= 2 ? RAG_CLASSES.red : RAG_CLASSES.amber)}>
+                      {isDone ? STATUS_LABELS[i.status] : countdownLabel(days)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No legal clocks running yet.</p>
+          )}
+          {isOwner && (
+            <Link href={`/projects/${id}/dates`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Record key dates
+            </Link>
+          )}
         </CardContent>
       </Card>
 
@@ -160,6 +219,9 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
                       {roleLabel(m.role)}
                       {m.is_firm && <span className="text-muted-foreground"> (firm)</span>}
                       {m.is_owner && <Badge variant="secondary" className="ml-2">Owner</Badge>}
+                      {m.appointment_ended_on && (
+                        <span className="block text-xs text-muted-foreground">Appointment ended {longDate(m.appointment_ended_on)}</span>
+                      )}
                     </TableCell>
                     <TableCell>{DISCIPLINES.find((d) => d.value === m.discipline)?.label ?? "—"}</TableCell>
                     <TableCell>
@@ -294,9 +356,13 @@ async function Project({ params }: { params: PageProps<"/projects/[id]">["params
                           {i.duty_templates?.legal_reference} · {i.duty_templates && ITEM_TYPE_LABELS[i.duty_templates.item_type]}
                         </div>
                       </div>
-                      <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", RAG_CLASSES[rag(i.status)])}>
-                        {STATUS_LABELS[i.status]}
-                      </span>
+                      {i.duty_templates && i.status === "not_started" && isWaiting(i.duty_templates.code, i.due_date) ? (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Not due yet</span>
+                      ) : (
+                        <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", RAG_CLASSES[rag(i.status)])}>
+                          {STATUS_LABELS[i.status]}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>

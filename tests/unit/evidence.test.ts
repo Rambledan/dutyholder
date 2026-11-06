@@ -99,6 +99,43 @@ describe("evidence pack", () => {
     ]));
     expect([...pack.entries.keys()].some((p) => p.endsWith("PD_appointment_awaiting_signatures.pdf"))).toBe(true);
   });
+
+  it("explains 09_Completion before the work is complete", async () => {
+    const pack = await buildPack(data());
+    expect(pack.entries.has(`${pack.ref}/09_Completion/README.txt`)).toBe(true);
+  });
+
+  it("files the completion notice, each signed statement and the handovers in 09_Completion (reg 16)", async () => {
+    const d = data();
+    d.project.construction_started_on = "2027-01-11";
+    d.project.work_completed_on = "2027-09-01";
+    d.members.push({ id: "m-pc", name: "Bea Builder", email: "bea@x.test", role: "principal_contractor", discipline: null,
+      is_firm: true, is_owner: false, removed_at: null, phone: "0161 000 0000", company: "Builder Ltd" });
+    d.items.push(
+      { id: "i-st-pd", member_id: "m-pd", code: "PD-16-COMPLETION", title: "Sign your completion statement", legal_reference: "Reg 16(4A)",
+        item_type: "acknowledge", status: "complete", answer: null, completed_at: "2027-09-02T10:00:00Z", competence_statement_id: null,
+        due_date: "2027-09-06" },
+      { id: "i-st-pc", member_id: "m-pc", code: "PC-16-COMPLETION", title: "Sign your completion statement", legal_reference: "Reg 16(4A)",
+        item_type: "acknowledge", status: "not_started", answer: null, completed_at: null, competence_statement_id: null,
+        due_date: "2027-09-06" },
+    );
+    d.signatures.push({ checklist_item_id: "i-st-pd", member_id: "m-pd", typed_name: "Pat Designer",
+      statement: "I, Pat Designer, state that I was appointed as principal designer…", statement_sha256: "d".repeat(64),
+      template_code: "PD-16-COMPLETION", template_version: 1, signed_at: "2027-09-02T10:00:00Z", ip_address: "1.2.3.4" });
+
+    const pack = await buildPack(d);
+    const paths = [...pack.entries.keys()].map((p) => p.replace(`${pack.ref}/`, ""));
+    expect(paths).toEqual(expect.arrayContaining([
+      "09_Completion/Completion_notice_reg16.pdf",
+      "09_Completion/Statements/Pat_Designer_PD-16-COMPLETION.pdf",
+      "09_Completion/Handover/Principal_designer_handover_11M5b.pdf",
+    ]));
+    // Not filed as a duty acknowledgement, and the missing statement is flagged.
+    expect(paths).not.toContain("04_Duty_Acknowledgements/Pat_Designer/Acknowledgements.pdf");
+    expect(pack.warnings).toEqual(expect.arrayContaining([
+      expect.stringContaining("Bea Builder: completion statement (reg 16(4A)) not signed"),
+    ]));
+  });
 });
 
 describe("audit trail CSV", () => {

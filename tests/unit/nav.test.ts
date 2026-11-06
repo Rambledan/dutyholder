@@ -13,7 +13,7 @@ describe("navSections", () => {
   });
 
   it("gives an owner with no statutory role the running-the-project links only", () => {
-    expect(labels(project({ isOwner: true }))).toEqual(["Dashboard", "People & appointments", "Evidence pack", "Project settings"]);
+    expect(labels(project({ isOwner: true }))).toEqual(["Dashboard", "People & appointments", "Key dates", "Evidence pack", "Project settings"]);
   });
 
   it("gives a dutyholder their tasks and the reg 11I report, but no owner pages", () => {
@@ -22,7 +22,7 @@ describe("navSections", () => {
 
   it("gives an owner who is also a dutyholder both sets", () => {
     expect(labels(project({ roles: ["principal_designer"], isOwner: true }))).toEqual(
-      ["Dashboard", "People & appointments", "My tasks", "Evidence pack", "Project settings"],
+      ["Dashboard", "People & appointments", "Key dates", "My tasks", "Evidence pack", "Project settings"],
     );
   });
 

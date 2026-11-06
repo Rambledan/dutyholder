@@ -43,6 +43,22 @@ export function reminderEmail(r: PlannedReminder, appUrl: string) {
         `Your dutyholder tasks for ${c.projectName} are still outstanding. Under regulation 11E, whoever appointed you must be satisfied you are competent before your work starts, so these need completing. ${progress}`,
       ];
       break;
+    case "deadline": {
+      const d = c.deadlines ?? [];
+      const soonest = d[0];
+      subject = soonest && soonest.daysLeft < 0
+        ? `Overdue: ${soonest.title} (${c.projectName})`
+        : `Legal deadline${soonest ? ` ${longDate(soonest.due)}` : ""}: ${c.projectName}`;
+      intro = [
+        `Hi ${first},`,
+        `${d.length === 1 ? "This has" : "These have"} a deadline set by the Building Regulations on ${c.projectName}:`,
+        ...d.map((x) => `• ${x.title} (${x.legalReference}): ${x.daysLeft < 0
+          ? `was due ${longDate(x.due)}, ${-x.daysLeft} day${x.daysLeft === -1 ? "" : "s"} ago`
+          : x.daysLeft === 0 ? "due today" : `due ${longDate(x.due)}, in ${x.daysLeft} day${x.daysLeft === 1 ? "" : "s"}`}`),
+        "Because the date is set in law, these reminders can arrive on any day of the week.",
+      ];
+      break;
+    }
     case "owner_digest":
       subject = `${c.behind?.length ?? 0} ${c.behind?.length === 1 ? "person is" : "people are"} behind on ${c.projectName}`;
       intro = [

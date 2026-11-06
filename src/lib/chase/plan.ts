@@ -3,12 +3,14 @@
 // so it can be tested with fixed dates. All "now" goes through projectNow.
 
 import { daysBetween, isoWeek, isWorkingHours, londonParts, projectNow } from "@/lib/clock";
+import { DEADLINES, daysLeft, deadlineReminderDue, isDeadline, isWaiting } from "@/lib/deadlines";
 
 export type ChaseProject = {
   id: string;
   name: string;
   clock_offset_days: number;
   construction_start_date: string | null;
+  work_completed_on?: string | null;
   is_demo?: boolean;
   demo_started_at?: string | null;
 };
@@ -23,6 +25,9 @@ export type ChaseMember = {
   chasing_paused: boolean;
   invited_at: string | null;
   started_at: string;
+  // Set when a principal's appointment has ended: only their legal
+  // deadlines (handover, completion statement) are chased after that.
+  appointment_ended_on?: string | null;
 };
 export type ChaseItem = {
   id: string;
@@ -33,6 +38,7 @@ export type ChaseItem = {
   title: string;
   item_type: string;
   due_date: string | null;
+  legal_reference?: string;
 };
 export type ChaseState = {
   projects: ChaseProject[];
@@ -43,7 +49,7 @@ export type ChaseState = {
   reminders: { member_id: string; project_id: string; step_key: string; kind: string; recipient_email: string; project_day: string }[];
 };
 
-export type Kind = "nudge" | "reminder" | "firm" | "owner_digest";
+export type Kind = "nudge" | "reminder" | "firm" | "owner_digest" | "deadline";
 
 export type OpenTask = { title: string; path: string };
 
@@ -67,6 +73,7 @@ export type PlannedReminder = {
     total: number;
     startDate: string | null;
     behind?: { name: string; open: number; days: number; paused: boolean }[];
+    deadlines?: { title: string; legalReference: string; due: string; daysLeft: number }[];
   };
 };
 
@@ -74,7 +81,7 @@ export type PlannedReminder = {
 // firm again every 7 days. Day 10 is the owner's digest (weekly).
 export const OWNER_DIGEST_DAY = 10;
 
-export function dueStep(days: number): { kind: Exclude<Kind, "owner_digest">; day: number } | null {
+export function dueStep(days: number): { kind: "nudge" | "reminder" | "firm"; day: number } | null {
   if (days >= 14) return { kind: "firm", day: 14 + Math.floor((days - 14) / 7) * 7 };
   if (days >= 7) return { kind: "reminder", day: 7 };
   if (days >= 3) return { kind: "nudge", day: 3 };
@@ -104,6 +111,10 @@ export function openTasks(state: ChaseState, member: ChaseMember) {
 
   for (const i of mine) {
     if (i.status === "complete" || i.status === "submitted") continue;
+    // A legal clock that hasn't started yet: nothing to do.
+    if (isWaiting(i.code, i.due_date)) continue;
+    // Once a principal's appointment has ended, only their legal deadlines.
+    if (member.appointment_ended_on && !isDeadline(i.code)) continue;
     if (i.item_type === "sign") {
       const kind = KIND_BY_CODE[i.code];
       const pending = state.pending_signatures.some(
@@ -122,6 +133,7 @@ export function openTasks(state: ChaseState, member: ChaseMember) {
 
   // Letters to sign as appointee have no checklist item of their own.
   for (const s of state.pending_signatures) {
+    if (member.appointment_ended_on) break;
     if (s.member_id === member.id && s.party === "appointee") {
       tasks.push({ title: KIND_TITLES[s.kind] ?? "Sign an appointment", path: `/projects/${s.project_id}/appointments/${s.appointment_id}` });
     }
@@ -138,11 +150,60 @@ export function planChase(state: ChaseState, base: Date = new Date()): PlannedRe
 
   for (const project of state.projects) {
     const now = projectNow(project, base);
-    if (!isWorkingHours(now)) continue;
-    const today = londonParts(now).date;
+    const { date: today, hour } = londonParts(now);
     const members = state.members.filter((m) => m.project_id === project.id);
     const owners = members.filter((m) => m.is_owner);
     const ownerName = owners[0]?.name ?? "the project team";
+
+    // Legal deadlines first: these go out every day of the week (still
+    // 8am to 6pm), to owners too, because the law doesn't wait for Monday.
+    if (hour >= 8 && hour < 18) {
+      for (const m of members) {
+        if (!m.user_id && !m.invited_at) continue;
+        if (m.chasing_paused) continue;
+        const { tasks, done, total } = openTasks(state, m);
+        const due = state.items
+          .filter((i) => i.member_id === m.id && i.due_date && isDeadline(i.code)
+            && i.status !== "complete" && i.status !== "submitted")
+          .map((i) => ({ item: i, days: daysLeft(i.due_date!, today) }))
+          .filter(({ item, days }) => deadlineReminderDue(DEADLINES[item.code].windowDays, days))
+          .sort((a, b) => a.days - b.days);
+        if (!due.length) continue;
+        const stepKey = `deadline_${today}`;
+        if (hasStep.has(`${m.id}|${stepKey}`)) continue;
+        const dayKey = `${m.email}|${today}`;
+        if (chasedOn.has(dayKey)) continue;
+        chasedOn.add(dayKey);
+        hasStep.add(`${m.id}|${stepKey}`);
+        const dueIds = new Set(due.map((d) => d.item.id));
+        planned.push({
+          project_id: project.id,
+          member_id: m.id,
+          recipient_email: m.email,
+          cc_emails: owners.map((o) => o.email).filter((e) => e !== m.email),
+          step_key: stepKey,
+          kind: "deadline",
+          item_ids: tasks.map((t) => t.id).filter((x): x is string => Boolean(x)),
+          project_day: today,
+          simulated: false,
+          context: {
+            projectName: project.name,
+            ownerName,
+            recipientName: m.name,
+            // Deadline tasks first, then anything else outstanding.
+            tasks: [...tasks.filter((t) => t.id && dueIds.has(t.id)), ...tasks.filter((t) => !t.id || !dueIds.has(t.id))],
+            done,
+            total,
+            startDate: project.construction_start_date,
+            deadlines: due.map(({ item, days }) => ({
+              title: item.title, legalReference: item.legal_reference ?? "", due: item.due_date!, daysLeft: days,
+            })),
+          },
+        });
+      }
+    }
+
+    if (!isWorkingHours(now)) continue;
 
     const behind: NonNullable<PlannedReminder["context"]["behind"]> = [];
 
@@ -226,10 +287,18 @@ export function planChase(state: ChaseState, base: Date = new Date()): PlannedRe
 // ignoring quiet hours and the once-a-day rule.
 export function nextChase(state: ChaseState, member: ChaseMember, base: Date = new Date()) {
   const project = state.projects.find((p) => p.id === member.project_id);
-  if (!project || member.is_owner) return null;
+  if (!project) return null;
   if (!member.user_id && !member.invited_at) return { label: "Not invited yet" };
   if (member.chasing_paused) return { label: "Paused" };
-  if (!openTasks(state, member).tasks.length) return { label: "Nothing outstanding" };
+  if (!openTasks(state, member).tasks.length) return member.is_owner ? null : { label: "Nothing outstanding" };
+
+  // A legal deadline outranks the usual sequence.
+  const deadline = state.items
+    .filter((i) => i.member_id === member.id && i.due_date && isDeadline(i.code)
+      && i.status !== "complete" && i.status !== "submitted")
+    .sort((x, y) => x.due_date!.localeCompare(y.due_date!))[0];
+  if (deadline) return { label: `Legal deadline: ${deadline.title}`, when: new Date(`${deadline.due_date}T12:00:00Z`) };
+  if (member.is_owner || member.appointment_ended_on) return null;
 
   const now = projectNow(project, base);
   const days = daysBetween(new Date(member.started_at), now);
