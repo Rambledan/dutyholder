@@ -5,7 +5,7 @@
 import { roleLabel, type DutyholderRole } from "@/lib/labels";
 
 export type NavIcon =
-  | "projects" | "new" | "dashboard" | "people" | "dates" | "tasks" | "exports" | "settings"
+  | "projects" | "new" | "dashboard" | "people" | "dates" | "tasks" | "concerns" | "exports" | "settings"
   | "report" | "details" | "competence" | "help";
 
 export type NavItem = { href: string; label: string; icon: NavIcon; count?: number };
@@ -58,6 +58,10 @@ export function navSections(project: ProjectScope | null): NavSection[] {
     // Anyone holding a statutory role has duties of their own to complete.
     if (project.roles.length > 0) {
       items.push({ href: `${base}/tasks`, label: "My tasks", icon: "tasks", count: project.openTasks || undefined });
+    }
+    // Concerns and comments between dutyholders (regs 11K, 11L, 11M(4), 11N(4)).
+    if (project.isOwner || project.roles.length > 0) {
+      items.push({ href: `${base}/concerns`, label: "Concerns", icon: "concerns" });
     }
     if (project.isOwner) {
       items.push(

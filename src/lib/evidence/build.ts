@@ -34,6 +34,12 @@ const dayOnly = (iso: string | null | undefined) =>
   iso ? new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-GB", { dateStyle: "long", timeZone: "UTC" }) : "Not recorded";
 
 const COMPLETION = ["CL-16-COMPLETION", "PD-16-COMPLETION", "PC-16-COMPLETION"];
+const CONCERN: Record<string, [string, string, string]> = {
+  design_concern: ["Design concern", "Principal designer", "Reg 11K(4)"],
+  building_concern: ["Building work concern", "Principal contractor", "Reg 11L(4)"],
+  pc_comment: ["Principal contractor's comment", "Principal designer", "Reg 11M(4)"],
+  pd_comment: ["Principal designer's comment", "Principal contractor", "Reg 11N(4)"],
+};
 
 export function slug(value: string, max = 40): string {
   const s = value.normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s-]+/g, "_");
@@ -244,8 +250,36 @@ export async function buildPack(data: PackData) {
   }
 
   // 06 Concerns -------------------------------------------------------------
-  text("06_Concerns/README.txt",
-    "Design and compliance concerns (regs 11K and 11L).\r\n\r\nThe 'raise a concern' form is not built yet in this version of Dutyholder, so no concerns are recorded here. Concerns raised by other means should be filed separately.\r\n");
+  // Regs 11K(4), 11L(4), 11M(4), 11N(4): each concern or comment with every
+  // recorded response, append-only and fingerprinted.
+  const concerns = data.concerns ?? [];
+  if (!concerns.length) {
+    text("06_Concerns/README.txt",
+      "Design and compliance concerns (regs 11K(4), 11L(4)) and comments between the principal designer and principal contractor (regs 11M(4), 11N(4)).\r\n\r\nNone have been raised in Dutyholder for this project.\r\n");
+  } else {
+    const unanswered = concerns.filter((c) => !c.responses.length);
+    for (const c of unanswered) warnings.push(`Concern "${c.subject}" (${CONCERN[c.kind]?.[0] ?? c.kind}) has no recorded response.`);
+    await pdf("06_Concerns/Concerns_and_responses.pdf", {
+      kicker: "Concerns and comments (regs 11K(4), 11L(4), 11M(4), 11N(4))",
+      title: p.name,
+      subtitle: `${concerns.length} raised · ${concerns.length - unanswered.length} with a recorded response`,
+      sections: concerns.map((c) => ({
+        heading: `${c.subject} – ${CONCERN[c.kind]?.[0] ?? c.kind}`,
+        blocks: [
+          { type: "facts" as const, rows: [
+            ["Raised by", `${member(c.raised_by_member_id)?.name ?? "—"}, ${when(c.created_at)}`],
+            ["Addressed to", CONCERN[c.kind]?.[1] ?? "—"], ["Regulation", CONCERN[c.kind]?.[2] ?? "—"],
+            ["Text SHA-256", hashLines(c.body_sha256)],
+          ] as [string, string][] },
+          { type: "quote" as const, text: c.body },
+          ...(c.responses.length ? c.responses.flatMap((r) => [
+            { type: "text" as const, text: `Response by ${r.responder_member_id ? member(r.responder_member_id)?.name ?? "—" : "—"}, ${when(r.created_at)}:` },
+            { type: "quote" as const, text: r.body },
+          ]) : [{ type: "warning" as const, text: "No response recorded." }]),
+        ],
+      })),
+    });
+  }
 
   // 07 Handover -------------------------------------------------------------
   // The 28-day handover documents (11M(5)(b), 11N(5)(b)), one per principal.
@@ -277,6 +311,21 @@ export async function buildPack(data: PackData) {
       }),
     });
     handovers.push({ path, bytes: entries.get(path)! });
+  }
+  // Replacement reviews (11M(6), 11N(6)).
+  for (const [code, file, ref] of [
+    ["PD-11M-REVIEW", "Replacement_principal_designer_review_11M6", "11M(6)"],
+    ["PC-11N-REVIEW", "Replacement_principal_contractor_review_11N6", "11N(6)"],
+  ] as const) {
+    const found = answerOf(code);
+    if (!found.length) continue;
+    await pdf(`07_Handover/${file}.pdf`, {
+      kicker: `Review of the previous arrangements (reg ${ref})`, title: "Replacement review",
+      sections: found.map((i) => ({
+        heading: `By ${member(i.member_id)?.name ?? "—"}, ${i.completed_at ? when(i.completed_at) : "draft"}`,
+        blocks: [{ type: "text" as const, text: i.answer?.text ?? "" }],
+      })),
+    });
   }
   if (!handovers.length) {
     text("07_Handover/README.txt", "No handover document (reg 11M(5)(b) or 11N(5)(b)) has been recorded yet.\r\n");

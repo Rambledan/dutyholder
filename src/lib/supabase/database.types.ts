@@ -422,6 +422,108 @@ export type Database = {
         }
         Relationships: []
       }
+      concern_responses: {
+        Row: {
+          body: string
+          body_sha256: string
+          concern_id: string
+          created_at: string
+          id: string
+          ip_address: unknown
+          responder: string
+          responder_member_id: string | null
+        }
+        Insert: {
+          body: string
+          body_sha256: string
+          concern_id: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          responder: string
+          responder_member_id?: string | null
+        }
+        Update: {
+          body?: string
+          body_sha256?: string
+          concern_id?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          responder?: string
+          responder_member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concern_responses_concern_id_fkey"
+            columns: ["concern_id"]
+            isOneToOne: false
+            referencedRelation: "concerns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "concern_responses_responder_member_id_fkey"
+            columns: ["responder_member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      concerns: {
+        Row: {
+          body: string
+          body_sha256: string
+          created_at: string
+          id: string
+          ip_address: unknown
+          kind: string
+          project_id: string
+          raised_by: string
+          raised_by_member_id: string
+          subject: string
+        }
+        Insert: {
+          body: string
+          body_sha256: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          kind: string
+          project_id: string
+          raised_by: string
+          raised_by_member_id: string
+          subject: string
+        }
+        Update: {
+          body?: string
+          body_sha256?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          kind?: string
+          project_id?: string
+          raised_by?: string
+          raised_by_member_id?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concerns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "concerns_raised_by_member_id_fkey"
+            columns: ["raised_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           checklist_item_id: string | null
@@ -999,6 +1101,46 @@ export type Database = {
           },
         ]
       }
+      role_briefings: {
+        Row: {
+          created_at: string
+          id: string
+          intro: string
+          role: Database["public"]["Enums"]["dutyholder_role"]
+          role_label: string
+          sources: string[]
+          statutory_text: string
+          superseded_at: string | null
+          template_code: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intro: string
+          role: Database["public"]["Enums"]["dutyholder_role"]
+          role_label: string
+          sources: string[]
+          statutory_text: string
+          superseded_at?: string | null
+          template_code: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intro?: string
+          role?: Database["public"]["Enums"]["dutyholder_role"]
+          role_label?: string
+          sources?: string[]
+          statutory_text?: string
+          superseded_at?: string | null
+          template_code?: string
+          version?: number
+        }
+        Relationships: [
+        ]
+      }
       signatures: {
         Row: {
           checklist_item_id: string
@@ -1323,6 +1465,21 @@ export type Database = {
         Args: { p_item_id: string; p_text: string }
         Returns: undefined
       }
+      is_project_principal: { Args: { p_project_id: string }; Returns: boolean }
+      previous_handovers: {
+        Args: { p_item_id: string }
+        Returns: {
+          appointment_ended_on: string
+          completed_at: string
+          handover_text: string
+          name: string
+        }[]
+      }
+      raise_concern: {
+        Args: { p_body: string; p_kind: string; p_project_id: string; p_subject: string }
+        Returns: string
+      }
+      respond_to_concern: { Args: { p_body: string; p_concern_id: string }; Returns: string }
       sha256_hex: { Args: { p_value: string }; Returns: string }
       shares_project_with: { Args: { p_user_id: string }; Returns: boolean }
       sign_acknowledgement: {

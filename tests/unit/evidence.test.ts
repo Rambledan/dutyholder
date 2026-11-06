@@ -100,6 +100,20 @@ describe("evidence pack", () => {
     expect([...pack.entries.keys()].some((p) => p.endsWith("PD_appointment_awaiting_signatures.pdf"))).toBe(true);
   });
 
+  it("files concerns with their responses in 06_Concerns, and flags any without one", async () => {
+    const d = data({ concerns: [
+      { id: "c1", kind: "design_concern", subject: "Fire stopping at party wall", body: "Detail 12 conflicts with the fire strategy.",
+        body_sha256: "e".repeat(64), raised_by_member_id: "m-sam", created_at: "2026-11-05T10:00:00Z", ip_address: null,
+        responses: [{ responder_member_id: "m-pd", body: "Revised as rev C.", body_sha256: "f".repeat(64), created_at: "2026-11-06T10:00:00Z", ip_address: null }] },
+      { id: "c2", kind: "pc_comment", subject: "Cavity barriers", body: "Not shown on the elevations.",
+        body_sha256: "1".repeat(64), raised_by_member_id: "m-sam", created_at: "2026-11-06T11:00:00Z", ip_address: null, responses: [] },
+    ] });
+    const pack = await buildPack(d);
+    expect(pack.entries.has(`${pack.ref}/06_Concerns/Concerns_and_responses.pdf`)).toBe(true);
+    expect(pack.entries.has(`${pack.ref}/06_Concerns/README.txt`)).toBe(false);
+    expect(pack.warnings).toEqual([expect.stringContaining('"Cavity barriers"')]);
+  });
+
   it("explains 09_Completion before the work is complete", async () => {
     const pack = await buildPack(data());
     expect(pack.entries.has(`${pack.ref}/09_Completion/README.txt`)).toBe(true);

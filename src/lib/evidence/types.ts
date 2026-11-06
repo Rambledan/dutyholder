@@ -39,6 +39,12 @@ export type PackAudit = {
   ip_address: string | null; details: unknown;
 };
 
+export type PackConcern = {
+  id: string; kind: string; subject: string; body: string; body_sha256: string; raised_by_member_id: string;
+  created_at: string; ip_address: string | null;
+  responses: { responder_member_id: string | null; body: string; body_sha256: string; created_at: string; ip_address: string | null }[];
+};
+
 export type PackData = {
   generatedAt: Date;
   project: {
@@ -56,6 +62,7 @@ export type PackData = {
   reviews: PackReview[];
   changeReports: PackChangeReport[];
   appointments: PackAppointment[];
+  concerns?: PackConcern[];
   audit: PackAudit[];
   // File contents by storage path (null if it couldn't be downloaded).
   files: Map<string, Uint8Array | null>;

@@ -108,6 +108,43 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
   },
 
+  {
+    id: "concerns",
+    title: "Concerns and comments",
+    category: "The law",
+    summary: "Report a compliance concern to the right principal, and get a response on the record.",
+    body: [
+      { list: [
+        "Designers report concerns about related design work to the principal designer (reg 11K(4)).",
+        "Contractors report concerns about related building work to the principal contractor (reg 11L(4)).",
+        "The principal contractor's comments on compliance go to the principal designer, who must have regard to them (reg 11M(4)), and the other way round (reg 11N(4)).",
+      ] },
+      { p: "Each one is emailed to whoever it's addressed to, who records a response. Concerns and responses can't be edited or deleted, and both go in the evidence pack (06_Concerns)." },
+      { p: "You see the concerns you raised. The principal designer, the principal contractor and the project owner see them all." },
+    ],
+  },
+  {
+    id: "briefings",
+    title: "Role briefings",
+    category: "The law",
+    summary: "Your first task: what the law asks of your role, in the regulations' own words.",
+    body: [
+      { p: "Each role's first task is a one-page briefing: a short introduction in plain English, then the duties in the words of the Building Regulations 2010 (regulations 11A and 11D for the client, 11J and 11K for designers, 11J and 11L for contractors, 11M for the principal designer and 11N for the principal contractor)." },
+      { p: "Signing it records the exact text you read, its version and its fingerprint. If the wording is updated later, what you signed doesn't change." },
+      { note: "The briefing helps you understand your duties. It isn't legal advice, and the duties stay with you." },
+    ],
+  },
+  {
+    id: "replacement",
+    title: "Replacing a principal",
+    category: "The law",
+    summary: "A new principal designer or principal contractor reviews the previous arrangements.",
+    body: [
+      { p: "When a principal designer's or principal contractor's appointment ends, record the end date on the Key dates page. They stay on the project to hand over and sign at completion." },
+      { p: "Anyone added in the same role afterwards gets a task to review the previous arrangements (regs 11M(6), 11N(6)), with the previous handover document shown alongside." },
+    ],
+  },
+
   // Roles --------------------------------------------------------------------
   {
     id: "roles",

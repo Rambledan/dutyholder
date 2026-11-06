@@ -47,6 +47,11 @@ export async function gatherPack(db: Db, projectId: string): Promise<PackData> {
   const signatories = apptIds.length ? await one(db.from("appointment_signatories").select("*").in("appointment_id", apptIds)) : [];
   const apptSignatures = apptIds.length ? await one(db.from("appointment_signatures").select("*").in("appointment_id", apptIds)) : [];
 
+  const concerns = await one(db.from("concerns").select("*").eq("project_id", projectId).order("created_at"));
+  const concernResponses = concerns.length
+    ? await one(db.from("concern_responses").select("*").in("concern_id", concerns.map((c) => c.id)).order("created_at"))
+    : [];
+
   // Audit: the project's own entries, plus entries about this project's
   // competence statements and documents (logged against the person).
   const docIds = [...evidenceDocs, ...itemDocs].map((d) => d.id);
@@ -110,6 +115,14 @@ export async function gatherPack(db: Db, projectId: string): Promise<PackData> {
           typed_name: g?.typed_name ?? null, signed_at: g?.signed_at ?? null, ip_address: (g?.ip_address as string | null) ?? null,
         };
       }),
+    })),
+    concerns: concerns.map((c) => ({
+      id: c.id, kind: c.kind, subject: c.subject, body: c.body, body_sha256: c.body_sha256,
+      raised_by_member_id: c.raised_by_member_id, created_at: c.created_at, ip_address: (c.ip_address as string | null) ?? null,
+      responses: concernResponses.filter((r) => r.concern_id === c.id).map((r) => ({
+        responder_member_id: r.responder_member_id, body: r.body, body_sha256: r.body_sha256, created_at: r.created_at,
+        ip_address: (r.ip_address as string | null) ?? null,
+      })),
     })),
     audit: audit.map((a) => ({
       occurred_at: a.occurred_at,
