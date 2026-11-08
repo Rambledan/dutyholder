@@ -52,6 +52,10 @@ export async function gatherPack(db: Db, projectId: string): Promise<PackData> {
     ? await one(db.from("concern_responses").select("*").in("concern_id", concerns.map((c) => c.id)).order("created_at"))
     : [];
 
+  const trackerRows = await one(db.from("project_requirements")
+    .select("*, requirements(sheet, section, ref, provision, sort_order, legislation_url, approved_document)")
+    .eq("project_id", projectId));
+
   // Audit: the project's own entries, plus entries about this project's
   // competence statements and documents (logged against the person).
   const docIds = [...evidenceDocs, ...itemDocs].map((d) => d.id);
@@ -116,6 +120,8 @@ export async function gatherPack(db: Db, projectId: string): Promise<PackData> {
         };
       }),
     })),
+    requirements: trackerRows.flatMap((r) => r.requirements ? [{ ...r, ...r.requirements }] : [])
+      .sort((a, b) => a.sort_order - b.sort_order),
     concerns: concerns.map((c) => ({
       id: c.id, kind: c.kind, subject: c.subject, body: c.body, body_sha256: c.body_sha256,
       raised_by_member_id: c.raised_by_member_id, created_at: c.created_at, ip_address: (c.ip_address as string | null) ?? null,

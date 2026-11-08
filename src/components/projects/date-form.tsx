@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormError } from "@/components/auth/form-error";
+import { keepFormValues } from "@/lib/keep-form-values";
 import type { DateState } from "@/app/projects/deadline-actions";
 
 // One trigger date: a date box, Save, and Clear when a date is recorded.
@@ -22,7 +23,7 @@ export function DateForm(props: {
   const [state, formAction, pending] = useActionState(props.action, { error: null, saved: false });
 
   return (
-    <form action={formAction} className="space-y-2">
+    <form onSubmit={keepFormValues(formAction)} className="space-y-2">
       <Label htmlFor={props.id} className="font-medium">{props.label}</Label>
       {props.hint && <p className="text-sm text-muted-foreground">{props.hint}</p>}
       <FormError message={state.error} />

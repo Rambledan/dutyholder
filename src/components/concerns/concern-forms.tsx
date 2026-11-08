@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/auth/form-error";
+import { keepFormValues } from "@/lib/keep-form-values";
 import { CONCERN_KINDS, type ConcernKind } from "@/lib/concerns";
 import type { ConcernState } from "@/app/projects/concern-actions";
 
@@ -27,7 +28,7 @@ export function RaiseConcernForm(props: { kinds: ConcernKind[]; action: Action }
   const info = CONCERN_KINDS[kind];
 
   return (
-    <form ref={ref} action={formAction} className="space-y-4">
+    <form ref={ref} onSubmit={keepFormValues(formAction)} className="space-y-4">
       <FormError message={state.error} />
       {props.kinds.length > 1 ? (
         <fieldset className="space-y-1.5">
@@ -67,7 +68,7 @@ export function RespondForm(props: { id: string; action: Action }) {
   const [state, formAction, pending] = useActionState(props.action, { error: null, done: false });
   const ref = useResetOnDone(state, pending);
   return (
-    <form ref={ref} action={formAction} className="space-y-2">
+    <form ref={ref} onSubmit={keepFormValues(formAction)} className="space-y-2">
       <FormError message={state.error} />
       <Label htmlFor={`respond-${props.id}`}>Your response</Label>
       <Textarea id={`respond-${props.id}`} name="body" required rows={3}

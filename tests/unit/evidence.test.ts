@@ -114,6 +114,22 @@ describe("evidence pack", () => {
     expect(pack.warnings).toEqual([expect.stringContaining('"Cavity barriers"')]);
   });
 
+  it("files the tracker in 08_Relevant_Requirements and flags the gaps", async () => {
+    const row = {
+      sheet: "Sch.1-Part B", section: "Schedule 1 Part B Fire Safety", ref: "B1", provision: "B1 Means of Warning & Escape", sort_order: 10,
+      legislation_url: null, approved_document: "Approved Document B", relevance: "relevant", relevance_reason: "", owner_member_id: "m-sam",
+      stage2_member_id: null, stage3_member_id: null, stage4_member_id: null, stage5_member_id: null, route: "approved_document",
+      guidance: "ADB", standard_basis: "", project_application: "Stay-put strategy.", notes: "", status: "design_in_progress",
+      action_text: "", action_member_id: null, action_due: null, updated_at: "2026-11-08T10:00:00Z",
+    };
+    const pack = await buildPack(data({ requirements: [row, { ...row, ref: "B2", provision: "B2", relevance: "to_confirm", owner_member_id: null, project_application: "" }] }));
+    expect(pack.entries.has(`${pack.ref}/08_Relevant_Requirements/Relevant_requirements_tracker.pdf`)).toBe(true);
+    const csv = new TextDecoder().decode(pack.entries.get(`${pack.ref}/08_Relevant_Requirements/Relevant_requirements_tracker.csv`)!);
+    expect(csv).toContain("Stay-put strategy.");
+    expect(csv).toContain("Sam Structures");
+    expect(pack.warnings).toEqual([expect.stringContaining("1 requirement not yet confirmed")]);
+  });
+
   it("explains 09_Completion before the work is complete", async () => {
     const pack = await buildPack(data());
     expect(pack.entries.has(`${pack.ref}/09_Completion/README.txt`)).toBe(true);

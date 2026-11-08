@@ -8,6 +8,7 @@ import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { RecordPdf, hashLines, pathLines, type Section } from "@/lib/pdf/record-pdf";
 import { csvCell, toCsv } from "./csv";
 import type { PackData, PackMember, PackStatement } from "./types";
+import { REQUIREMENT_STATUSES, ROUTES } from "@/lib/tracker";
 
 const ROLE: Record<string, string> = {
   client: "Client", principal_designer: "Principal designer", designer: "Designer",
@@ -335,6 +336,60 @@ export async function buildPack(data: PackData) {
         && Date.parse(`${i.due_date}T23:59:59Z`) < data.generatedAt.getTime()) {
       warnings.push(`${member(i.member_id)?.name ?? "—"}: handover document was due ${dayOnly(i.due_date)} and is not complete.`);
     }
+  }
+
+  // 08 Relevant requirements -------------------------------------------------
+  const tracker = data.requirements ?? [];
+  if (tracker.length) {
+    const who = (id: string | null) => (id ? member(id)?.name ?? "—" : "");
+    const relevance = (v: string) => ({ to_confirm: "To confirm", relevant: "Relevant", not_relevant: "Not relevant" })[v] ?? v;
+    const status = (v: string) => REQUIREMENT_STATUSES.find((s) => s.value === v)?.label ?? v;
+    const route = (v: string | null) => ROUTES.find((r) => r.value === v)?.label ?? "";
+    const toConfirm = tracker.filter((r) => r.relevance === "to_confirm").length;
+    const noOwner = tracker.filter((r) => r.relevance === "relevant" && !r.owner_member_id).length;
+    const noAnswer = tracker.filter((r) => r.relevance === "relevant" && !r.project_application.trim()).length;
+    if (toConfirm) warnings.push(`Tracker: ${toConfirm} requirement${toConfirm === 1 ? "" : "s"} not yet confirmed as relevant or not relevant.`);
+    if (noOwner) warnings.push(`Tracker: ${noOwner} relevant requirement${noOwner === 1 ? " has" : "s have"} no responsible designer.`);
+    if (noAnswer) warnings.push(`Tracker: ${noAnswer} relevant requirement${noAnswer === 1 ? " has" : "s have"} no project-specific answer.`);
+
+    entries.set("08_Relevant_Requirements/Relevant_requirements_tracker.csv", new TextEncoder().encode(toCsv(
+      ["Group", "Ref", "Provision", "Relevance", "Reason if not relevant", "Responsible designer", "Stage 2", "Stage 3", "Stage 4", "Stage 5",
+       "Route to compliance", "Design guidance followed", "How this applies to this project", "Standard basis", "Notes and evidence",
+       "Submission status", "Action required", "Action owner", "Action due", "Row last updated (UTC)", "Legislation", "Approved Document"],
+      tracker.map((r) => [r.section, r.ref, r.provision, relevance(r.relevance), r.relevance_reason, who(r.owner_member_id),
+        who(r.stage2_member_id), who(r.stage3_member_id), who(r.stage4_member_id), who(r.stage5_member_id), route(r.route), r.guidance,
+        r.project_application, r.standard_basis, r.notes, status(r.status), r.action_text, who(r.action_member_id), r.action_due,
+        r.updated_at, r.legislation_url, r.approved_document]),
+    )));
+
+    const groups = [...new Set(tracker.map((r) => r.sheet))];
+    await pdf("08_Relevant_Requirements/Relevant_requirements_tracker.pdf", {
+      kicker: "Relevant requirements (reg 11Q) – tracker",
+      title: p.name,
+      subtitle: `${tracker.length} requirements · generated ${when(data.generatedAt.toISOString())}`,
+      sections: [
+        { blocks: [{ type: "text", text: "The principal designer coordinates this tracker and relies on each designer's advice; they do not warrant another designer's design. Each answer was written by the designer responsible for it." }] },
+        ...groups.map((sheet) => {
+          const rows = tracker.filter((r) => r.sheet === sheet);
+          const answered = rows.filter((r) => r.relevance !== "not_relevant" && (r.project_application.trim() || r.standard_basis.trim()));
+          return {
+            heading: rows[0].section,
+            blocks: [
+              { type: "table" as const, columns: ["Provision", "Relevance", "Responsible", "Route", "Status"], widths: [3, 1, 1.6, 1.6, 1.4],
+                rows: rows.map((r) => [r.provision, r.relevance === "not_relevant" ? `Not relevant: ${r.relevance_reason}` : relevance(r.relevance),
+                  who(r.owner_member_id) || "—", route(r.route) || "—", r.relevance === "not_relevant" ? "—" : status(r.status)]) },
+              ...answered.flatMap((r) => [
+                { type: "text" as const, text: `${r.provision} – ${who(r.owner_member_id) || "unassigned"}` },
+                ...(r.project_application.trim() ? [{ type: "quote" as const, text: r.project_application }] : []),
+                ...(r.standard_basis.trim() ? [{ type: "text" as const, text: `Standard basis: ${r.standard_basis}` }] : []),
+              ]),
+            ],
+          };
+        }),
+      ],
+    });
+  } else {
+    text("08_Relevant_Requirements/README.txt", "No relevant requirements tracker was recorded for this project.\r\n");
   }
 
   // 09 Completion -----------------------------------------------------------

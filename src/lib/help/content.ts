@@ -145,6 +145,23 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
   },
 
+  {
+    id: "tracker",
+    title: "The requirements tracker",
+    category: "Running a project",
+    summary: "Every relevant requirement, with an owner and a project-specific answer.",
+    body: [
+      { p: "The tracker lists the relevant requirements defined in regulation 11Q: regulations 4, 6, 7, 8, 22 to 28, 36 and 41 to 44 and Schedule 1, with links to the legislation and the matching Approved Document." },
+      { list: [
+        "The principal designer (or project owner) decides whether each row is relevant, with a reason if it isn't, and assigns the responsible designer and any owner per RIBA stage.",
+        "'Assign by discipline' fills in unassigned rows where exactly one team member has the usual discipline. Check the result.",
+        "Each designer sees their rows under My requirements and writes their own answers. The principal designer can't write them for you.",
+        "'How this applies to this project' is required before a row moves beyond design in progress.",
+      ] },
+      { p: "Colours: red means to confirm or not started, amber means under way, green means granted approval, and grey means confirmed as not relevant. Every change is logged, and the tracker goes in the evidence pack (08_Relevant_Requirements)." },
+    ],
+  },
+
   // Roles --------------------------------------------------------------------
   {
     id: "roles",

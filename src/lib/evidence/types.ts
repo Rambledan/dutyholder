@@ -45,6 +45,14 @@ export type PackConcern = {
   responses: { responder_member_id: string | null; body: string; body_sha256: string; created_at: string; ip_address: string | null }[];
 };
 
+export type PackRequirement = {
+  sheet: string; section: string; ref: string | null; provision: string; sort_order: number; legislation_url: string | null;
+  approved_document: string | null; relevance: string; relevance_reason: string; owner_member_id: string | null;
+  stage2_member_id: string | null; stage3_member_id: string | null; stage4_member_id: string | null; stage5_member_id: string | null;
+  route: string | null; guidance: string; standard_basis: string; project_application: string; notes: string; status: string;
+  action_text: string; action_member_id: string | null; action_due: string | null; updated_at: string;
+};
+
 export type PackData = {
   generatedAt: Date;
   project: {
@@ -63,6 +71,7 @@ export type PackData = {
   changeReports: PackChangeReport[];
   appointments: PackAppointment[];
   concerns?: PackConcern[];
+  requirements?: PackRequirement[];
   audit: PackAudit[];
   // File contents by storage path (null if it couldn't be downloaded).
   files: Map<string, Uint8Array | null>;
