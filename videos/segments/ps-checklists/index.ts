@@ -13,7 +13,7 @@ export default defineSegment({
 		"Dutyholder builds everyone's checklist for you: acknowledgements, competence statements and evidence, all tied to the regulations.",
 
 	mount(el) {
-		screen = new AppScreen(el, "Step 9 / 10", [
+		screen = new AppScreen(el, "Step 9 / 11", [
 			{ src: full, height: manifest.screens["11-project-full"].height, url: "dutyholder.vercel.app/projects/the-old-mill" },
 		]);
 	},

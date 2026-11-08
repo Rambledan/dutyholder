@@ -16,9 +16,9 @@ export default defineSegment({
 		"From your projects page, click New project. Give it a name, a site address and a short description.",
 
 	mount(el) {
-		screen = new AppScreen(el, "Step 3 / 10", [
+		screen = new AppScreen(el, "Step 3 / 11", [
 			{ src: home, url: "dutyholder.vercel.app" },
-			{ src: newProject, url: "dutyholder.vercel.app/projects/new", masks: [pad(n.devNote, [4, 3])] },
+			{ src: newProject, url: "dutyholder.vercel.app/projects/new" },
 		]);
 	},
 

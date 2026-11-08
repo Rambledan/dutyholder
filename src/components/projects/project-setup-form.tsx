@@ -66,7 +66,6 @@ export function ProjectSetupForm(props: {
         <Label htmlFor="description">Description</Label>
         <Textarea id="description" name="description" rows={4} defaultValue={initial.description}
           placeholder="Building type, use, storeys, height, new build or alteration, number of homes…" />
-        <p className="text-xs text-muted-foreground">Phase 8 will use this to suggest which regulations apply.</p>
       </div>
 
       <div className="space-y-2">

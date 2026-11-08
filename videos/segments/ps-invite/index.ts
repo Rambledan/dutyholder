@@ -13,7 +13,7 @@ export default defineSegment({
 		"Click Invite, and each person gets an email with a secure link. You can see who has joined and who hasn't.",
 
 	mount(el) {
-		screen = new AppScreen(el, "Step 8 / 10", [
+		screen = new AppScreen(el, "Step 8 / 11", [
 			{ src: team, url: "dutyholder.vercel.app/projects/the-old-mill" },
 		]);
 	},

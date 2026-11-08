@@ -13,7 +13,7 @@ export default defineSegment({
 		"Next, add your team under their statutory roles: the client, designers and their disciplines, and the principal contractor. A firm can hold an appointment too.",
 
 	mount(el) {
-		screen = new AppScreen(el, "Step 7 / 10", [
+		screen = new AppScreen(el, "Step 7 / 11", [
 			{ src: addMember, url: "dutyholder.vercel.app/projects/the-old-mill" },
 		]);
 	},

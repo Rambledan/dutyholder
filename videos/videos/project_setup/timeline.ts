@@ -17,6 +17,7 @@ const timeline: Timeline = {
 		{ id: "ps-invite", transition: "fade" },
 		{ id: "ps-checklists", transition: "fade" },
 		{ id: "ps-dashboard", transition: "fade" },
+		{ id: "ps-key-dates", transition: "fade" },
 		{ id: "ps-outro", transition: "fade" },
 	],
 };

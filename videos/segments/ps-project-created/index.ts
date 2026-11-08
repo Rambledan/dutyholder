@@ -16,8 +16,8 @@ export default defineSegment({
 		"Create the project, and the set-up is summarised at the top.",
 
 	mount(el) {
-		screen = new AppScreen(el, "Step 6 / 10", [
-			{ src: questions, url: "dutyholder.vercel.app/projects/new", masks: [pad(q.devNote, [4, 3])] },
+		screen = new AppScreen(el, "Step 6 / 11", [
+			{ src: questions, url: "dutyholder.vercel.app/projects/new" },
 			{ src: created, url: "dutyholder.vercel.app/projects/the-old-mill" },
 		]);
 	},

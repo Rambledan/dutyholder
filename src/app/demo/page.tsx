@@ -8,7 +8,7 @@ const VIDEOS = [
     id: "project-setup",
     title: "Setting up a project",
     audience: "For principal designers",
-    length: "1:21",
+    length: "1:28",
     summary:
       "Alex Morgan, a principal designer, sets up “The Old Mill”. A few scoping questions decide which duties apply to whom, then the team is added under their statutory roles and Dutyholder builds everyone's checklist.",
     steps: [
@@ -17,6 +17,7 @@ const VIDEOS = [
       "New project and scoping questions",
       "Add the team and send invites",
       "Checklists and the progress dashboard",
+      "Key dates that start the legal clocks",
     ],
   },
   {
@@ -34,6 +35,22 @@ const VIDEOS = [
       "Done, and reusable on the next project",
     ],
   },
+  {
+    id: "tracker",
+    title: "The requirements tracker",
+    audience: "For principal designers and design teams",
+    length: "0:50",
+    summary:
+      "Alex Morgan assigns each relevant requirement and records why one doesn't apply. Grace Okafor, the fire engineer, writes her own project-specific answer, and it all goes into the evidence pack.",
+    steps: [
+      "Every requirement, by Part",
+      "Assign by discipline",
+      "Record what isn't relevant, and why",
+      "My requirements, for each designer",
+      "The designer's own answer",
+      "Progress and the evidence pack",
+    ],
+  },
 ];
 
 // Open to everyone, signed in or not. The videos are static files in
@@ -45,8 +62,8 @@ export default function DemoPage() {
       <header className="mb-10 space-y-2">
         <h1 className="text-4xl font-medium tracking-[-0.03em] sm:text-[44px] sm:leading-[48px]">Demo videos</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Real screens from Dutyholder. A principal designer sets up a project, then an invited designer completes
-          their duties under Part 2A of the Building Regulations.
+          Real screens from Dutyholder. A principal designer sets up a project, an invited designer completes their
+          duties under Part 2A of the Building Regulations, and the team works through the relevant requirements.
         </p>
       </header>
       <div className="space-y-14">

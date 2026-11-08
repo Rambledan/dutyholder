@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { DISCLAIMER } from "@/lib/disclaimer";
 import { AppSidebar } from "./app-sidebar";
 
 // Signed-in layout: the sidebar panel on the left, the page on the canvas.
@@ -12,6 +13,7 @@ export function AppFrame(props: { children: React.ReactNode; width?: "default" |
       </Suspense>
       <main className={`mx-auto w-full min-w-0 flex-1 px-1 py-4 sm:px-4 lg:py-6 ${props.width === "wide" ? "max-w-6xl" : "max-w-4xl"}`}>
         {props.children}
+        <p className="mt-12 border-t pt-4 text-xs text-muted-foreground">{DISCLAIMER}</p>
       </main>
     </div>
   );

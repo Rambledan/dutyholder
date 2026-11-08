@@ -13,7 +13,7 @@ export default defineSegment({
 		"The dashboard shows each person's progress in red, amber and green. Reminders go out automatically, so you don't have to chase.",
 
 	mount(el) {
-		screen = new AppScreen(el, "Step 10 / 10", [
+		screen = new AppScreen(el, "Step 10 / 11", [
 			{ src: dashboard, height: manifest.screens["12-dashboard"].height, url: "dutyholder.vercel.app/projects/the-old-mill/dashboard" },
 		]);
 	},

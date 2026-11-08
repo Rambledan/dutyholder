@@ -59,7 +59,7 @@ the full plan and `CLAUDE.md` for the working rules.
   person per day, never to paused people, signed on the owner's behalf
 - Every reminder is recorded before sending; a step can never repeat
 - All chasing time goes through `projectNow(project)` (`src/lib/clock.ts`)
-- `/api/cron/chase`, called by Vercel Cron at 09:00 UTC on weekdays
+- `/api/cron/chase`, called by Vercel Cron at 09:00 UTC every day (ordinary reminders still skip weekends; legal deadlines do not)
   (`vercel.json`), protected by `CRON_SECRET`; the only user of the secret key
 - Owner dashboard: people × duties grid, last chased, next reminder, Pause
   and Chase now

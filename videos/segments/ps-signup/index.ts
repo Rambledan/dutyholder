@@ -13,7 +13,7 @@ export default defineSegment({
 		"You start from an invite. Create your account with your name and a strong password.",
 
 	mount(el) {
-		screen = new AppScreen(el, "Step 1 / 10", [
+		screen = new AppScreen(el, "Step 1 / 11", [
 			{ src: signup, url: "dutyholder.vercel.app/signup" },
 		]);
 	},

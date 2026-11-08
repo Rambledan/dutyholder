@@ -15,8 +15,8 @@ export default defineSegment({
 		"A few scoping questions follow: is it higher-risk, is the client domestic, and how many contractors will there be? Your answers decide which duties apply to whom.",
 
 	mount(el) {
-		screen = new AppScreen(el, "Step 5 / 10", [
-			{ src: questions, url: "dutyholder.vercel.app/projects/new", masks: [pad(q.devNote, [4, 3])] },
+		screen = new AppScreen(el, "Step 5 / 11", [
+			{ src: questions, url: "dutyholder.vercel.app/projects/new" },
 		]);
 	},
 
