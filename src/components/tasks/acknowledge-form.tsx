@@ -9,7 +9,11 @@ import { FormError } from "@/components/auth/form-error";
 import { signAcknowledgement } from "@/app/projects/task-actions";
 import { Term } from "@/components/help/term";
 
-export function AcknowledgeForm(props: { projectId: string; itemId: string; fullName: string; nextHref: string }) {
+export function AcknowledgeForm(props: {
+  projectId: string; itemId: string; fullName: string; nextHref: string;
+  // Defaults to the wording for acknowledging a duty.
+  confirmLabel?: string;
+}) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -34,7 +38,7 @@ export function AcknowledgeForm(props: { projectId: string; itemId: string; full
       <FormError message={error} />
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" className="mt-1 size-4" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-        <span>I confirm I have read and understood this duty and will comply with it.</span>
+        <span>{props.confirmLabel ?? "I confirm I have read and understood this duty and will comply with it."}</span>
       </label>
       <div className="space-y-2">
         <Label htmlFor="typed-name"><Term id="typed-signature">Type your full name to sign</Term></Label>

@@ -3,10 +3,12 @@
 export type PackMember = {
   id: string; name: string; email: string; role: string | null; discipline: string | null;
   is_firm: boolean; is_owner: boolean; removed_at: string | null;
+  appointment_ended_on?: string | null; phone?: string | null; company?: string | null;
 };
 export type PackItem = {
   id: string; member_id: string; code: string; title: string; legal_reference: string; item_type: string;
   status: string; answer: { text?: string } | null; completed_at: string | null; competence_statement_id: string | null;
+  due_date?: string | null;
 };
 export type PackSignature = {
   checklist_item_id: string; member_id: string; typed_name: string; statement: string; statement_sha256: string;
@@ -37,12 +39,28 @@ export type PackAudit = {
   ip_address: string | null; details: unknown;
 };
 
+export type PackConcern = {
+  id: string; kind: string; subject: string; body: string; body_sha256: string; raised_by_member_id: string;
+  created_at: string; ip_address: string | null;
+  responses: { responder_member_id: string | null; body: string; body_sha256: string; created_at: string; ip_address: string | null }[];
+};
+
+export type PackRequirement = {
+  sheet: string; section: string; ref: string | null; provision: string; sort_order: number; legislation_url: string | null;
+  approved_document: string | null; relevance: string; relevance_reason: string; owner_member_id: string | null;
+  stage2_member_id: string | null; stage3_member_id: string | null; stage4_member_id: string | null; stage5_member_id: string | null;
+  route: string | null; guidance: string; standard_basis: string; project_application: string; notes: string; status: string;
+  action_text: string; action_member_id: string | null; action_due: string | null; updated_at: string;
+};
+
 export type PackData = {
   generatedAt: Date;
   project: {
     id: string; name: string; address: string; description: string; is_domestic_client: boolean;
     domestic_duties_to_pd: boolean; expected_contractors: number; cdm_pd_certified: boolean;
     construction_start_date: string | null; retention_years: number; is_demo: boolean; created_at: string;
+    bc_application_date?: string | null; construction_started_on?: string | null;
+    work_completed_on?: string | null; occupation_date?: string | null;
   };
   members: PackMember[];
   items: PackItem[];
@@ -52,6 +70,8 @@ export type PackData = {
   reviews: PackReview[];
   changeReports: PackChangeReport[];
   appointments: PackAppointment[];
+  concerns?: PackConcern[];
+  requirements?: PackRequirement[];
   audit: PackAudit[];
   // File contents by storage path (null if it couldn't be downloaded).
   files: Map<string, Uint8Array | null>;

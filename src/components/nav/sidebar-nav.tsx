@@ -4,15 +4,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
-  Archive, Award, Check, ChevronsUpDown, CircleHelp, FileWarning, LayoutDashboard, LayoutGrid,
-  ListChecks, LogOut, Menu, Plus, Settings, ShieldCheck, UserRound, Users, X, type LucideIcon,
+  Archive, Award, CalendarClock, Check, ClipboardList, ChevronsUpDown, CircleHelp, FileWarning, LayoutDashboard, LayoutGrid,
+  ListChecks, LogOut, Menu, MessageSquareWarning, Plus, Settings, ShieldCheck, UserRound, Users, X, type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { activeHref, navSections, projectIdFromPath, scopeSubtitle, type NavIcon, type ProjectScope } from "@/lib/nav";
 import { signOut } from "@/app/actions";
 
 const ICONS: Record<NavIcon, LucideIcon> = {
-  projects: LayoutGrid, new: Plus, dashboard: LayoutDashboard, people: Users, tasks: ListChecks,
+  projects: LayoutGrid, new: Plus, dashboard: LayoutDashboard, people: Users, dates: CalendarClock, tasks: ListChecks, tracker: ClipboardList, concerns: MessageSquareWarning,
   exports: Archive, settings: Settings, report: FileWarning, details: UserRound, competence: Award, help: CircleHelp,
 };
 

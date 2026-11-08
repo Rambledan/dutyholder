@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type { ItemStatus, ItemType } from "@/lib/labels";
+import { DEADLINES, isWaiting } from "@/lib/deadlines";
 
 export type Task = {
   id: string;
@@ -14,8 +15,13 @@ export type Task = {
   itemType: ItemType;
   sortOrder: number;
   memberId: string;
-  // Every task type can be opened since phase 4.
+  // False while a legal clock hasn't started (e.g. the handover before the
+  // appointment ends). Everything else can be opened.
   available: boolean;
+  // Set by the database from the trigger event (phase 8).
+  dueDate: string | null;
+  // What an unavailable task is waiting for.
+  waitingFor: string | null;
 };
 
 // The signed-in user's own active tasks on one project, in duty order.
@@ -31,7 +37,7 @@ export async function loadMyTasks(supabase: SupabaseClient<Database>, projectId:
 
   const { data } = await supabase
     .from("checklist_items")
-    .select("id, template_code, status, member_id, duty_templates(title, explanation, legal_reference, legislation_url, item_type, sort_order)")
+    .select("id, template_code, status, member_id, due_date, duty_templates(title, explanation, legal_reference, legislation_url, item_type, sort_order)")
     .in("member_id", memberIds)
     .is("withdrawn_at", null);
 
@@ -48,7 +54,9 @@ export async function loadMyTasks(supabase: SupabaseClient<Database>, projectId:
       itemType: i.duty_templates!.item_type,
       sortOrder: i.duty_templates!.sort_order,
       memberId: i.member_id,
-      available: true,
+      available: !isWaiting(i.template_code, i.due_date),
+      dueDate: i.due_date,
+      waitingFor: isWaiting(i.template_code, i.due_date) ? DEADLINES[i.template_code].waitingFor : null,
     }))
     .sort((a, b) => a.sortOrder - b.sortOrder);
 

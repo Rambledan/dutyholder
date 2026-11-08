@@ -7,13 +7,18 @@ import {
 
 afterAll(() => pool?.end());
 
-const CLIENT_CORE = ["CL-11A-ARRANGE", "CL-11A-INFO", "CL-11A-PROGRAMME", "CL-11E-REVIEW-ENGAGED"];
+const CLIENT_CORE = ["CL-11A-ARRANGE", "CL-11A-INFO", "CL-11A-PROGRAMME", "CL-11E-REVIEW-ENGAGED", "CL-16-COMPLETION", "BRF-CL"];
 const CLIENT_APPOINTMENTS = [
   "CL-11D-APPOINT-PC", "CL-11D-APPOINT-PD", "CL-11D-TIMING", "CL-11E-REVIEW-PC", "CL-11E-REVIEW-PD", "CL-11O-NOTIFY",
 ];
 const DESIGNER = ["ALL-11F-COMPETENCE", "ALL-11I-CHANGE", "ALL-11J-GENERAL", "DES-11K-DESIGNER"];
 const CONTRACTOR = ["ALL-11F-COMPETENCE", "ALL-11I-CHANGE", "ALL-11J-GENERAL", "CON-11L-CONTRACTOR"];
-const PD_ONLY = ["PD-11M-ACK", "PD-11M-HANDOVER", "PD-11M-MATRIX"];
+const PD_ONLY = ["PD-11M-ACK", "PD-11M-HANDOVER", "PD-11M-MATRIX", "PD-16-COMPLETION", "BRF-PD"];
+// Phase 8: the principal contractor's handover and completion statement.
+const PC_ONLY = ["PC-11N-HANDOVER", "PC-16-COMPLETION", "BRF-PC"];
+// Phase 9: each role's briefing.
+const DES_BRIEF = "BRF-DES";
+const CON_BRIEF = "BRF-CON";
 
 const sorted = (codes: string[]) => [...codes].sort();
 
@@ -43,9 +48,9 @@ describe("generate_checklist", () => {
 
       expect(codes[emails.client]).toEqual(sorted([...CLIENT_CORE, ...CLIENT_APPOINTMENTS, "ALL-11J-GENERAL"]));
       expect(codes[emails.pd]).toEqual(sorted([...DESIGNER, ...PD_ONLY]));
-      expect(codes[emails.designer]).toEqual(sorted(DESIGNER));
-      expect(codes[emails.pc]).toEqual(sorted(CONTRACTOR));
-      expect(codes[emails.contractor]).toEqual(sorted(CONTRACTOR));
+      expect(codes[emails.designer]).toEqual(sorted([...DESIGNER, DES_BRIEF]));
+      expect(codes[emails.pc]).toEqual(sorted([...CONTRACTOR, ...PC_ONLY]));
+      expect(codes[emails.contractor]).toEqual(sorted([...CONTRACTOR, CON_BRIEF]));
     }));
 
   it("moves a domestic client's duties to the principal contractor, and the 11O notice to the principal designer", () =>
@@ -55,7 +60,7 @@ describe("generate_checklist", () => {
 
       expect(codes[emails.client]).toBeUndefined();
       expect(codes[emails.pc]).toEqual(
-        sorted([...CONTRACTOR, ...CLIENT_CORE, ...CLIENT_APPOINTMENTS.filter((c) => c !== "CL-11O-NOTIFY")]),
+        sorted([...CONTRACTOR, ...PC_ONLY, ...CLIENT_CORE, ...CLIENT_APPOINTMENTS.filter((c) => c !== "CL-11O-NOTIFY")]),
       );
       expect(codes[emails.pd]).toEqual(sorted([...DESIGNER, ...PD_ONLY, "CL-11O-NOTIFY"]));
     }));
@@ -66,7 +71,7 @@ describe("generate_checklist", () => {
       const codes = await activeCodesByEmail(db, projectId);
 
       expect(codes[emails.client]).toBeUndefined();
-      expect(codes[emails.pc]).toEqual(sorted(CONTRACTOR));
+      expect(codes[emails.pc]).toEqual(sorted([...CONTRACTOR, ...PC_ONLY]));
       expect(codes[emails.pd]).toEqual(sorted([...DESIGNER, ...PD_ONLY, ...CLIENT_CORE, ...CLIENT_APPOINTMENTS]));
     }));
 
@@ -76,7 +81,7 @@ describe("generate_checklist", () => {
       const codes = await activeCodesByEmail(db, projectId);
 
       expect(codes[emails.client]).toEqual(sorted([...CLIENT_CORE, "ALL-11J-GENERAL"]));
-      expect(codes[emails.designer]).toEqual(sorted([...DESIGNER, "DES-11D-LEAD"]));
+      expect(codes[emails.designer]).toEqual(sorted([...DESIGNER, DES_BRIEF, "DES-11D-LEAD"]));
     }));
 
   it("gives a sole contractor the client's duties on a domestic project (they are the principal contractor)", () =>
@@ -87,7 +92,7 @@ describe("generate_checklist", () => {
       await addMember(db, owner.id, projectId, builder, "contractor");
       const codes = await activeCodesByEmail(db, projectId);
 
-      expect(codes[builder]).toEqual(sorted([...CONTRACTOR, ...CLIENT_CORE]));
+      expect(codes[builder]).toEqual(sorted([...CONTRACTOR, CON_BRIEF, ...PC_ONLY, ...CLIENT_CORE]));
     }));
 
   it("adds the CDM certification only when the client has ticked it", () =>

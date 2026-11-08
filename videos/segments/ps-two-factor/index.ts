@@ -14,7 +14,7 @@ export default defineSegment({
 		"Then turn on two-factor login with an authenticator app, and save your recovery codes somewhere safe.",
 
 	mount(el) {
-		screen = new AppScreen(el, "Step 2 / 10", [
+		screen = new AppScreen(el, "Step 2 / 11", [
 			{ src: twoFactor, url: "dutyholder.vercel.app/mfa/enrol" },
 			{ src: recovery, url: "dutyholder.vercel.app/mfa/enrol" },
 		]);

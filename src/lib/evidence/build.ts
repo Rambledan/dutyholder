@@ -8,6 +8,7 @@ import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { RecordPdf, hashLines, pathLines, type Section } from "@/lib/pdf/record-pdf";
 import { csvCell, toCsv } from "./csv";
 import type { PackData, PackMember, PackStatement } from "./types";
+import { REQUIREMENT_STATUSES, ROUTES } from "@/lib/tracker";
 
 const ROLE: Record<string, string> = {
   client: "Client", principal_designer: "Principal designer", designer: "Designer",
@@ -28,6 +29,18 @@ const when = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/London" }) : "—";
 const day = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString("en-GB", { dateStyle: "long", timeZone: "Europe/London" }) : "—";
+
+// A calendar date (YYYY-MM-DD), shown as itself whatever the time zone.
+const dayOnly = (iso: string | null | undefined) =>
+  iso ? new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-GB", { dateStyle: "long", timeZone: "UTC" }) : "Not recorded";
+
+const COMPLETION = ["CL-16-COMPLETION", "PD-16-COMPLETION", "PC-16-COMPLETION"];
+const CONCERN: Record<string, [string, string, string]> = {
+  design_concern: ["Design concern", "Principal designer", "Reg 11K(4)"],
+  building_concern: ["Building work concern", "Principal contractor", "Reg 11L(4)"],
+  pc_comment: ["Principal contractor's comment", "Principal designer", "Reg 11M(4)"],
+  pd_comment: ["Principal designer's comment", "Principal contractor", "Reg 11N(4)"],
+};
 
 export function slug(value: string, max = 40): string {
   const s = value.normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s-]+/g, "_");
@@ -81,7 +94,11 @@ export async function buildPack(data: PackData) {
         ["Contractors", p.expected_contractors > 1 ? "More than one" : "Only one"],
         ["CDM principal designer certification", p.cdm_pd_certified ? "Yes (reg 11D(2))" : "No"],
         ["Higher-risk building work", "No"],
-        ["Construction start", day(p.construction_start_date)],
+        ["Construction start (planned)", day(p.construction_start_date)],
+        ["Building control application", dayOnly(p.bc_application_date)],
+        ["Construction started", dayOnly(p.construction_started_on)],
+        ["Early occupation", p.occupation_date ? dayOnly(p.occupation_date) : "None recorded"],
+        ["Work completed", dayOnly(p.work_completed_on)],
         ["Records kept for", `${p.retention_years} years after the project`],
         ["Project created", when(p.created_at)],
       ] }] },
@@ -191,8 +208,9 @@ export async function buildPack(data: PackData) {
 
   // 04 Duty acknowledgements ------------------------------------------------
   for (const m of data.members) {
-    const sigs = data.signatures.filter((g) => g.member_id === m.id);
-    const acks = itemsOf(m).filter((i) => i.item_type === "acknowledge");
+    // Completion statements have their own folder (09_Completion).
+    const sigs = data.signatures.filter((g) => g.member_id === m.id && !COMPLETION.includes(g.template_code));
+    const acks = itemsOf(m).filter((i) => i.item_type === "acknowledge" && !COMPLETION.includes(i.code));
     if (!acks.length) continue;
     const unsigned = acks.filter((i) => !sigs.some((g) => g.checklist_item_id === i.id));
     if (unsigned.length) warnings.push(`${m.name}: ${unsigned.length} acknowledgement${unsigned.length === 1 ? "" : "s"} not signed.`);
@@ -233,18 +251,214 @@ export async function buildPack(data: PackData) {
   }
 
   // 06 Concerns -------------------------------------------------------------
-  text("06_Concerns/README.txt",
-    "Design and compliance concerns (regs 11K and 11L).\r\n\r\nThe 'raise a concern' form is not built yet in this version of Dutyholder, so no concerns are recorded here. Concerns raised by other means should be filed separately.\r\n");
+  // Regs 11K(4), 11L(4), 11M(4), 11N(4): each concern or comment with every
+  // recorded response, append-only and fingerprinted.
+  const concerns = data.concerns ?? [];
+  if (!concerns.length) {
+    text("06_Concerns/README.txt",
+      "Design and compliance concerns (regs 11K(4), 11L(4)) and comments between the principal designer and principal contractor (regs 11M(4), 11N(4)).\r\n\r\nNone have been raised in Dutyholder for this project.\r\n");
+  } else {
+    const unanswered = concerns.filter((c) => !c.responses.length);
+    for (const c of unanswered) warnings.push(`Concern "${c.subject}" (${CONCERN[c.kind]?.[0] ?? c.kind}) has no recorded response.`);
+    await pdf("06_Concerns/Concerns_and_responses.pdf", {
+      kicker: "Concerns and comments (regs 11K(4), 11L(4), 11M(4), 11N(4))",
+      title: p.name,
+      subtitle: `${concerns.length} raised · ${concerns.length - unanswered.length} with a recorded response`,
+      sections: concerns.map((c) => ({
+        heading: `${c.subject} – ${CONCERN[c.kind]?.[0] ?? c.kind}`,
+        blocks: [
+          { type: "facts" as const, rows: [
+            ["Raised by", `${member(c.raised_by_member_id)?.name ?? "—"}, ${when(c.created_at)}`],
+            ["Addressed to", CONCERN[c.kind]?.[1] ?? "—"], ["Regulation", CONCERN[c.kind]?.[2] ?? "—"],
+            ["Text SHA-256", hashLines(c.body_sha256)],
+          ] as [string, string][] },
+          { type: "quote" as const, text: c.body },
+          ...(c.responses.length ? c.responses.flatMap((r) => [
+            { type: "text" as const, text: `Response by ${r.responder_member_id ? member(r.responder_member_id)?.name ?? "—" : "—"}, ${when(r.created_at)}:` },
+            { type: "quote" as const, text: r.body },
+          ]) : [{ type: "warning" as const, text: "No response recorded." }]),
+        ],
+      })),
+    });
+  }
 
   // 07 Handover -------------------------------------------------------------
-  const handover = answerOf("PD-11M-HANDOVER");
-  if (handover.length) {
-    await pdf("07_Handover/Principal_designer_handover_11M5b.pdf", {
-      kicker: "Principal designer handover (reg 11M(5)(b))", title: "Arrangements for planning, managing and monitoring the design work",
-      sections: handover.map((i) => ({ heading: `By ${member(i.member_id)?.name ?? "—"}, ${i.completed_at ? when(i.completed_at) : "draft"}`, blocks: [{ type: "text", text: i.answer?.text ?? "" }] })),
+  // The 28-day handover documents (11M(5)(b), 11N(5)(b)), one per principal.
+  const handovers: { path: string; bytes: Uint8Array }[] = [];
+  for (const [code, label, ref, file] of [
+    ["PD-11M-HANDOVER", "Principal designer", "11M(5)(b)", "Principal_designer_handover_11M5b"],
+    ["PC-11N-HANDOVER", "Principal contractor", "11N(5)(b)", "Principal_contractor_handover_11N5b"],
+  ] as const) {
+    const found = answerOf(code);
+    if (!found.length) continue;
+    const path = `07_Handover/${file}.pdf`;
+    await pdf(path, {
+      kicker: `${label} handover (reg ${ref})`,
+      title: code === "PD-11M-HANDOVER"
+        ? "Arrangements for planning, managing and monitoring the design work"
+        : "Arrangements for planning, managing and monitoring the building work",
+      sections: found.map((i) => {
+        const m = member(i.member_id);
+        return {
+          heading: `By ${m?.name ?? "—"}, ${i.completed_at ? when(i.completed_at) : "draft"}`,
+          blocks: [
+            ...(m?.appointment_ended_on || i.due_date ? [{ type: "facts" as const, rows: [
+              ["Appointment ended", dayOnly(m?.appointment_ended_on)],
+              ["Due to the client by", dayOnly(i.due_date)],
+            ] as [string, string][] }] : []),
+            { type: "text" as const, text: i.answer?.text ?? "" },
+          ],
+        };
+      }),
+    });
+    handovers.push({ path, bytes: entries.get(path)! });
+  }
+  // Replacement reviews (11M(6), 11N(6)).
+  for (const [code, file, ref] of [
+    ["PD-11M-REVIEW", "Replacement_principal_designer_review_11M6", "11M(6)"],
+    ["PC-11N-REVIEW", "Replacement_principal_contractor_review_11N6", "11N(6)"],
+  ] as const) {
+    const found = answerOf(code);
+    if (!found.length) continue;
+    await pdf(`07_Handover/${file}.pdf`, {
+      kicker: `Review of the previous arrangements (reg ${ref})`, title: "Replacement review",
+      sections: found.map((i) => ({
+        heading: `By ${member(i.member_id)?.name ?? "—"}, ${i.completed_at ? when(i.completed_at) : "draft"}`,
+        blocks: [{ type: "text" as const, text: i.answer?.text ?? "" }],
+      })),
+    });
+  }
+  if (!handovers.length) {
+    text("07_Handover/README.txt", "No handover document (reg 11M(5)(b) or 11N(5)(b)) has been recorded yet.\r\n");
+  }
+  for (const i of data.items) {
+    if ((i.code === "PD-11M-HANDOVER" || i.code === "PC-11N-HANDOVER") && i.due_date && i.status !== "complete"
+        && Date.parse(`${i.due_date}T23:59:59Z`) < data.generatedAt.getTime()) {
+      warnings.push(`${member(i.member_id)?.name ?? "—"}: handover document was due ${dayOnly(i.due_date)} and is not complete.`);
+    }
+  }
+
+  // 08 Relevant requirements -------------------------------------------------
+  const tracker = data.requirements ?? [];
+  if (tracker.length) {
+    const who = (id: string | null) => (id ? member(id)?.name ?? "—" : "");
+    const relevance = (v: string) => ({ to_confirm: "To confirm", relevant: "Relevant", not_relevant: "Not relevant" })[v] ?? v;
+    const status = (v: string) => REQUIREMENT_STATUSES.find((s) => s.value === v)?.label ?? v;
+    const route = (v: string | null) => ROUTES.find((r) => r.value === v)?.label ?? "";
+    const toConfirm = tracker.filter((r) => r.relevance === "to_confirm").length;
+    const noOwner = tracker.filter((r) => r.relevance === "relevant" && !r.owner_member_id).length;
+    const noAnswer = tracker.filter((r) => r.relevance === "relevant" && !r.project_application.trim()).length;
+    if (toConfirm) warnings.push(`Tracker: ${toConfirm} requirement${toConfirm === 1 ? "" : "s"} not yet confirmed as relevant or not relevant.`);
+    if (noOwner) warnings.push(`Tracker: ${noOwner} relevant requirement${noOwner === 1 ? " has" : "s have"} no responsible designer.`);
+    if (noAnswer) warnings.push(`Tracker: ${noAnswer} relevant requirement${noAnswer === 1 ? " has" : "s have"} no project-specific answer.`);
+
+    entries.set("08_Relevant_Requirements/Relevant_requirements_tracker.csv", new TextEncoder().encode(toCsv(
+      ["Group", "Ref", "Provision", "Relevance", "Reason if not relevant", "Responsible designer", "Stage 2", "Stage 3", "Stage 4", "Stage 5",
+       "Route to compliance", "Design guidance followed", "How this applies to this project", "Standard basis", "Notes and evidence",
+       "Submission status", "Action required", "Action owner", "Action due", "Row last updated (UTC)", "Legislation", "Approved Document"],
+      tracker.map((r) => [r.section, r.ref, r.provision, relevance(r.relevance), r.relevance_reason, who(r.owner_member_id),
+        who(r.stage2_member_id), who(r.stage3_member_id), who(r.stage4_member_id), who(r.stage5_member_id), route(r.route), r.guidance,
+        r.project_application, r.standard_basis, r.notes, status(r.status), r.action_text, who(r.action_member_id), r.action_due,
+        r.updated_at, r.legislation_url, r.approved_document]),
+    )));
+
+    const groups = [...new Set(tracker.map((r) => r.sheet))];
+    await pdf("08_Relevant_Requirements/Relevant_requirements_tracker.pdf", {
+      kicker: "Relevant requirements (reg 11Q) – tracker",
+      title: p.name,
+      subtitle: `${tracker.length} requirements · generated ${when(data.generatedAt.toISOString())}`,
+      sections: [
+        { blocks: [{ type: "text", text: "The principal designer coordinates this tracker and relies on each designer's advice; they do not warrant another designer's design. Each answer was written by the designer responsible for it." }] },
+        ...groups.map((sheet) => {
+          const rows = tracker.filter((r) => r.sheet === sheet);
+          const answered = rows.filter((r) => r.relevance !== "not_relevant" && (r.project_application.trim() || r.standard_basis.trim()));
+          return {
+            heading: rows[0].section,
+            blocks: [
+              { type: "table" as const, columns: ["Provision", "Relevance", "Responsible", "Route", "Status"], widths: [3, 1, 1.6, 1.6, 1.4],
+                rows: rows.map((r) => [r.provision, r.relevance === "not_relevant" ? `Not relevant: ${r.relevance_reason}` : relevance(r.relevance),
+                  who(r.owner_member_id) || "—", route(r.route) || "—", r.relevance === "not_relevant" ? "—" : status(r.status)]) },
+              ...answered.flatMap((r) => [
+                { type: "text" as const, text: `${r.provision} – ${who(r.owner_member_id) || "unassigned"}` },
+                ...(r.project_application.trim() ? [{ type: "quote" as const, text: r.project_application }] : []),
+                ...(r.standard_basis.trim() ? [{ type: "text" as const, text: `Standard basis: ${r.standard_basis}` }] : []),
+              ]),
+            ],
+          };
+        }),
+      ],
     });
   } else {
-    text("07_Handover/README.txt", "The principal designer's handover document (reg 11M(5)(b)) has not been recorded yet.\r\n");
+    text("08_Relevant_Requirements/README.txt", "No relevant requirements tracker was recorded for this project.\r\n");
+  }
+
+  // 09 Completion -----------------------------------------------------------
+  // Reg 16(4), (4A): the completion notice, within 5 days of completion,
+  // with signed statements from the client and EACH principal designer and
+  // principal contractor, plus both handover documents.
+  if (!p.work_completed_on) {
+    text("09_Completion/README.txt",
+      "The building work has not been marked complete yet. Once it is, this folder holds the completion notice (reg 16(4), (4A)), every signed completion statement and the handover documents.\r\n");
+  } else {
+    const due = new Date(Date.parse(`${p.work_completed_on}T12:00:00Z`) + 5 * 86_400_000).toISOString().slice(0, 10);
+    const statementItems = data.items.filter((i) => COMPLETION.includes(i.code));
+    const signedStatements = statementItems.flatMap((i) => {
+      const g = data.signatures.find((x) => x.checklist_item_id === i.id);
+      return g ? [{ item: i, sig: g }] : [];
+    });
+    const unsignedStatements = statementItems.filter((i) => !signedStatements.some((x) => x.item.id === i.id));
+    for (const i of unsignedStatements) {
+      warnings.push(`${member(i.member_id)?.name ?? "—"}: completion statement (reg 16(4A)) not signed; due ${dayOnly(due)}.`);
+    }
+    const parties = data.members.filter((m) => m.role === "client" || m.role === "principal_designer"
+      || m.role === "principal_contractor" || statementItems.some((i) => i.member_id === m.id));
+
+    await pdf("09_Completion/Completion_notice_reg16.pdf", {
+      kicker: "Completion notice (Building Regulations 2010, reg 16(4), (4A))",
+      title: p.name,
+      subtitle: p.address,
+      sections: [
+        ...(unsignedStatements.length ? [{ heading: "Not ready to send", blocks: unsignedStatements.map((i) => ({
+          type: "warning" as const, text: `Statement still to be signed by ${member(i.member_id)?.name ?? "—"}.` })) }] : []),
+        { heading: "The work", blocks: [{ type: "facts", rows: [
+          ["Statement", `The building work at ${p.address || p.name} was completed on ${dayOnly(p.work_completed_on)}.`],
+          ["Notice due to building control by", dayOnly(due)],
+        ] }] },
+        { heading: "Dutyholders", blocks: [
+          { type: "table", columns: ["Role", "Name", "Email", "Phone"], widths: [1.8, 2.2, 2.6, 1.4],
+            rows: parties.map((m) => [
+              (m.role ? ROLE[m.role] : "—") + (m.appointment_ended_on ? ` (until ${dayOnly(m.appointment_ended_on)})` : ""),
+              m.name + (m.company ? `, ${m.company}` : ""), m.email, m.phone || "—",
+            ]) },
+          { type: "text", text: "Dutyholder doesn't hold postal addresses. Add the address of each person above before the notice is given." },
+        ] },
+        { heading: "Signed statements", blocks: signedStatements.length ? signedStatements.flatMap(({ item, sig }) => [
+          { type: "quote" as const, text: sig.statement },
+          { type: "facts" as const, rows: [
+            ["Signed by", `${sig.typed_name} (${member(item.member_id)?.name ?? "—"})`], ["Signed", when(sig.signed_at)],
+            ["IP address", sig.ip_address ?? "—"], ["Wording SHA-256", hashLines(sig.statement_sha256)],
+          ] as [string, string][] },
+        ]) : [{ type: "text" as const, text: "No statements signed yet." }] },
+        { heading: "Also in this folder", blocks: [{ type: "text", text: handovers.length
+          ? "The principal designer's and principal contractor's handover documents (regs 11M(5)(b), 11N(5)(b)), as recorded."
+          : "No handover documents have been recorded yet." }] },
+      ],
+    });
+    for (const { item, sig } of signedStatements) {
+      const m = member(item.member_id);
+      await pdf(`09_Completion/Statements/${folders.get(item.member_id)}_${item.code}.pdf`, {
+        kicker: "Signed completion statement (reg 16(4A))", title: m?.name ?? "—",
+        subtitle: m?.role ? ROLE[m.role] : "",
+        sections: [{ blocks: [
+          { type: "quote", text: sig.statement },
+          { type: "facts", rows: [
+            ["Typed name", sig.typed_name], ["Signed", when(sig.signed_at)], ["IP address", sig.ip_address ?? "—"],
+            ["Wording SHA-256", hashLines(sig.statement_sha256)], ["Template", `${sig.template_code} v${sig.template_version}`],
+          ] },
+        ] }],
+      });
+    }
+    for (const h of handovers) entries.set(h.path.replace("07_Handover/", "09_Completion/Handover/"), h.bytes);
   }
 
   // 99 Audit trail ----------------------------------------------------------

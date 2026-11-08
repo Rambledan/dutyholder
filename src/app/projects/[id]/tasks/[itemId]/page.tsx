@@ -12,8 +12,11 @@ import { STATUS_LABELS } from "@/lib/labels";
 import { loadStatement } from "@/lib/statements";
 import { KIND_BY_CODE, KIND_LABELS } from "@/lib/letters";
 import { loadMyTasks, nextTask } from "@/lib/tasks";
+import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { HelpLink } from "@/components/help/help-link";
+import { londonParts, projectNow } from "@/lib/clock";
+import { COMPLETION_CODES, DEADLINES, countdownLabel, daysLeft, longDate } from "@/lib/deadlines";
 
 export const metadata = { title: "Task · Dutyholder" };
 
@@ -34,6 +37,10 @@ const FORM_PROMPTS: Record<string, string> = {
   "PD-11G-INDIVIDUAL": "Name the individual who will manage the principal designer role, and their position in the firm.",
   "PD-11M-MATRIX": "List each part of the design and the designer responsible for it.",
   "PD-11M-HANDOVER": "Explain the arrangements you made to plan, manage and monitor the design work.",
+  "PC-11N-HANDOVER": "Explain the arrangements you made to plan, manage and monitor the building work.",
+  "PD-11M-REVIEW": "Record what you found when reviewing the previous principal designer's arrangements, and anything you will change.",
+  "PC-11N-REVIEW": "Record what you found when reviewing the previous principal contractor's arrangements, and anything you will change.",
+  "PC-16-OCCUPATION": "Record the notice: which building control body, the date you gave notice, which parts will be occupied and from when.",
 };
 
 async function TaskView({ params }: { params: Params }) {
@@ -41,7 +48,7 @@ async function TaskView({ params }: { params: Params }) {
   const { id: projectId, itemId } = await params;
 
   const [{ data: project }, { tasks, members }, { data: item }, { data: profile }] = await Promise.all([
-    supabase.from("projects").select("id, name, is_higher_risk").eq("id", projectId).maybeSingle(),
+    supabase.from("projects").select("id, name, is_higher_risk, clock_offset_days, is_demo, demo_started_at").eq("id", projectId).maybeSingle(),
     loadMyTasks(supabase, projectId, userId),
     supabase.from("checklist_items").select("answer, competence_statement_id").eq("id", itemId).maybeSingle(),
     supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
@@ -54,23 +61,93 @@ async function TaskView({ params }: { params: Params }) {
   const nextHref = next ? `/projects/${projectId}/tasks/${next.id}` : `/projects/${projectId}/tasks`;
   const done = task.status === "complete" || task.status === "submitted";
 
+  const isCompletion = COMPLETION_CODES.includes(task.code);
+  const deadline = DEADLINES[task.code];
+  const today = londonParts(projectNow(project)).date;
+
+  // Role briefings: our introduction, then the law's own words.
+  const { data: briefing } = task.code.startsWith("BRF-")
+    ? await supabase.from("role_briefings").select("role_label, version, intro, statutory_text, sources")
+        .eq("template_code", task.code).is("superseded_at", null).maybeSingle()
+    : { data: null };
+  const briefingView = briefing && (
+    <div className="mb-6 space-y-4 text-sm">
+      <div className="space-y-3">
+        {briefing.intro.split("\n\n").map((p, i) => <p key={i}>{p}</p>)}
+      </div>
+      <div className="space-y-2">
+        <p className="font-medium">What the law says</p>
+        <div className="max-h-[28rem] space-y-3 overflow-y-auto rounded-lg border bg-muted/40 p-4 font-serif text-[15px] leading-relaxed">
+          {briefing.statutory_text.split("\n\n").map((block, i) => (
+            <div key={i} className="space-y-1.5">
+              {block.split("\n").map((line, j) => (
+                <p key={j} className={cn(j === 0 && "font-sans font-semibold", /^\([a-z]+\)/.test(line) && "pl-5",
+                  /^\((i|ii|iii|iv|v|vi)\)/.test(line) && "pl-10")}>{line}</p>
+              ))}
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          From the Building Regulations 2010 on{" "}
+          {briefing.sources.map((u, i) => (
+            <span key={u}>{i > 0 && ", "}<a href={u} target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-4 hover:underline">{u.split("/").pop()}</a></span>
+          ))}{" "}
+          (legislation.gov.uk). Contains public sector information licensed under the Open Government Licence v3.0.
+          Briefing version {briefing.version}.
+          {task.code === "BRF-PD" && " Further reading: the BCO Technical Note on the Building Safety Act (September 2026), at bco.org.uk."}
+        </p>
+      </div>
+    </div>
+  );
+
   let body: React.ReactNode;
   if (!task.available) {
-    body = <p className="text-sm text-muted-foreground">This step arrives in the next release.</p>;
+    body = (
+      <div className="space-y-2 text-sm">
+        <p className="font-medium">Not due yet</p>
+        <p className="text-muted-foreground">This task starts {task.waitingFor}</p>
+        {isCompletion && (
+          <p className="text-muted-foreground">
+            The statement is filled in for you from the project&apos;s records: the completion date
+            {task.code === "CL-16-COMPLETION" ? "" : " and your appointment dates"}. Signing it then takes one click.
+          </p>
+        )}
+      </div>
+    );
   } else if (task.itemType === "acknowledge") {
     if (done) {
       const { data: sig } = await supabase.from("signatures")
-        .select("typed_name, signed_at, statement_sha256").eq("checklist_item_id", itemId).maybeSingle();
+        .select("typed_name, signed_at, statement, statement_sha256").eq("checklist_item_id", itemId).maybeSingle();
       body = sig ? (
-        <p className="text-sm">
-          Signed by <strong>{sig.typed_name}</strong> on{" "}
-          {new Date(sig.signed_at).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" })}.
-          <span className="mt-1 block font-mono text-xs text-muted-foreground">Wording fingerprint {sig.statement_sha256.slice(0, 16)}…</span>
-        </p>
+        <div className="space-y-3 text-sm">
+          {isCompletion && <blockquote className="rounded-lg border bg-muted/40 p-3">{sig.statement}</blockquote>}
+          <p>
+            Signed by <strong>{sig.typed_name}</strong> on{" "}
+            {new Date(sig.signed_at).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" })}.
+            <span className="mt-1 block font-mono text-xs text-muted-foreground">Wording fingerprint {sig.statement_sha256.slice(0, 16)}…</span>
+          </p>
+        </div>
       ) : null;
+    } else if (isCompletion) {
+      // The exact words, filled in by the database, so what you read is
+      // what you sign.
+      const { data: statement, error } = await supabase.rpc("statement_to_sign", { p_item_id: itemId });
+      body = error || !statement ? (
+        <p className="rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm">
+          {error?.message ?? "This statement can't be prepared yet."}
+        </p>
+      ) : (
+        <div className="space-y-4">
+          <blockquote className="rounded-lg border bg-muted/40 p-3 text-sm">{statement}</blockquote>
+          <AcknowledgeForm projectId={projectId} itemId={itemId} fullName={profile?.full_name ?? ""} nextHref={nextHref}
+            confirmLabel="I confirm this statement is true, to the best of my knowledge." />
+        </div>
+      );
     } else {
-      body = <AcknowledgeForm projectId={projectId} itemId={itemId} fullName={profile?.full_name ?? ""} nextHref={nextHref} />;
+      body = <AcknowledgeForm projectId={projectId} itemId={itemId} fullName={profile?.full_name ?? ""} nextHref={nextHref}
+        confirmLabel={briefing ? `I have read and understood my duties as ${briefing.role_label.toLowerCase()}.` : undefined} />;
     }
+    body = <>{briefingView}{body}</>;
   } else if (task.code === "ALL-11F-COMPETENCE") {
     if (item.competence_statement_id && (task.status === "submitted" || task.status === "complete")) {
       const linked = await loadStatement(supabase, item.competence_statement_id);
@@ -180,12 +257,32 @@ async function TaskView({ params }: { params: Params }) {
     );
   } else if (task.itemType === "form") {
     const text = (item.answer as { text?: string } | null)?.text ?? "";
+    // A replacement's review starts from the previous principal's handover.
+    const { data: previous } = task.code === "PD-11M-REVIEW" || task.code === "PC-11N-REVIEW"
+      ? await supabase.rpc("previous_handovers", { p_item_id: itemId })
+      : { data: null };
+    const previousView = previous && (
+      <div className="mb-6 space-y-3 text-sm">
+        <p className="font-medium">The previous handover</p>
+        {previous.length === 0 && <p className="text-muted-foreground">No previous principal is recorded.</p>}
+        {previous.map((h, i) => (
+          <div key={i} className="rounded-lg border bg-muted/40 p-3">
+            <p className="mb-1 text-xs text-muted-foreground">
+              {h.name} · appointment ended {longDate(h.appointment_ended_on)}
+              {h.completed_at ? "" : " · handover not marked complete"}
+            </p>
+            <p className="whitespace-pre-line">{h.handover_text || "No handover document recorded yet."}</p>
+          </div>
+        ))}
+      </div>
+    );
     body = done ? (
       <p className="whitespace-pre-line rounded-lg border bg-muted/40 p-3 text-sm">{text}</p>
     ) : (
       <SimpleForm projectId={projectId} itemId={itemId} initial={text} nextHref={nextHref}
         prompt={FORM_PROMPTS[task.code] ?? "Your answer"} />
     );
+    body = <>{previousView}{body}</>;
   } else if (task.itemType === "upload") {
     const { data: docs } = await supabase.from("documents")
       .select("id, file_name, size_bytes, sha256, created_at")
@@ -215,6 +312,13 @@ async function TaskView({ params }: { params: Params }) {
             } />
           </CardTitle>
           <CardDescription className="text-base">{task.explanation}</CardDescription>
+          {deadline && task.dueDate && !done && (
+            <p className={cn("rounded-lg px-3 py-2 text-sm font-medium",
+              daysLeft(task.dueDate, today) <= 2 ? "bg-destructive-soft text-destructive" : "bg-warning-soft text-warning")}>
+              Legal deadline {longDate(task.dueDate)} · {countdownLabel(daysLeft(task.dueDate, today))}
+              <span className="block text-xs font-normal">The clock runs {deadline.clock}.</span>
+            </p>
+          )}
           {task.legislationUrl && (
             <a href={task.legislationUrl} target="_blank" rel="noopener noreferrer"
               className="text-sm text-primary underline-offset-4 hover:underline">

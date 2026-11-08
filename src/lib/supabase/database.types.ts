@@ -422,6 +422,285 @@ export type Database = {
         }
         Relationships: []
       }
+      concern_responses: {
+        Row: {
+          body: string
+          body_sha256: string
+          concern_id: string
+          created_at: string
+          id: string
+          ip_address: unknown
+          responder: string
+          responder_member_id: string | null
+        }
+        Insert: {
+          body: string
+          body_sha256: string
+          concern_id: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          responder: string
+          responder_member_id?: string | null
+        }
+        Update: {
+          body?: string
+          body_sha256?: string
+          concern_id?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          responder?: string
+          responder_member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concern_responses_concern_id_fkey"
+            columns: ["concern_id"]
+            isOneToOne: false
+            referencedRelation: "concerns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "concern_responses_responder_member_id_fkey"
+            columns: ["responder_member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      concerns: {
+        Row: {
+          body: string
+          body_sha256: string
+          created_at: string
+          id: string
+          ip_address: unknown
+          kind: string
+          project_id: string
+          raised_by: string
+          raised_by_member_id: string
+          subject: string
+        }
+        Insert: {
+          body: string
+          body_sha256: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          kind: string
+          project_id: string
+          raised_by: string
+          raised_by_member_id: string
+          subject: string
+        }
+        Update: {
+          body?: string
+          body_sha256?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          kind?: string
+          project_id?: string
+          raised_by?: string
+          raised_by_member_id?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concerns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "concerns_raised_by_member_id_fkey"
+            columns: ["raised_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "project_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalogue_versions: {
+        Row: {
+          created_at: string
+          id: string
+          in_force_from: string | null
+          label: string
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          in_force_from?: string | null
+          label: string
+          source: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          in_force_from?: string | null
+          label?: string
+          source?: string
+        }
+        Relationships: [
+        ]
+      }
+      project_requirements: {
+        Row: {
+          action_due: string | null
+          action_member_id: string | null
+          action_text: string
+          guidance: string
+          id: string
+          notes: string
+          owner_member_id: string | null
+          project_application: string
+          project_id: string
+          relevance: Database["public"]["Enums"]["requirement_relevance"]
+          relevance_at: string | null
+          relevance_by: string | null
+          relevance_reason: string
+          requirement_id: string
+          route: Database["public"]["Enums"]["compliance_route"] | null
+          stage2_member_id: string | null
+          stage3_member_id: string | null
+          stage4_member_id: string | null
+          stage5_member_id: string | null
+          standard_basis: string
+          status: Database["public"]["Enums"]["requirement_status"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          action_due?: string | null
+          action_member_id?: string | null
+          action_text?: string
+          guidance?: string
+          id?: string
+          notes?: string
+          owner_member_id?: string | null
+          project_application?: string
+          project_id: string
+          relevance?: Database["public"]["Enums"]["requirement_relevance"]
+          relevance_at?: string | null
+          relevance_by?: string | null
+          relevance_reason?: string
+          requirement_id: string
+          route?: Database["public"]["Enums"]["compliance_route"] | null
+          stage2_member_id?: string | null
+          stage3_member_id?: string | null
+          stage4_member_id?: string | null
+          stage5_member_id?: string | null
+          standard_basis?: string
+          status?: Database["public"]["Enums"]["requirement_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          action_due?: string | null
+          action_member_id?: string | null
+          action_text?: string
+          guidance?: string
+          id?: string
+          notes?: string
+          owner_member_id?: string | null
+          project_application?: string
+          project_id?: string
+          relevance?: Database["public"]["Enums"]["requirement_relevance"]
+          relevance_at?: string | null
+          relevance_by?: string | null
+          relevance_reason?: string
+          requirement_id?: string
+          route?: Database["public"]["Enums"]["compliance_route"] | null
+          stage2_member_id?: string | null
+          stage3_member_id?: string | null
+          stage4_member_id?: string | null
+          stage5_member_id?: string | null
+          standard_basis?: string
+          status?: Database["public"]["Enums"]["requirement_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_requirements_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_requirements_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      requirements: {
+        Row: {
+          approved_document: string | null
+          default_discipline: string | null
+          heading: string | null
+          id: string
+          legislation_url: string | null
+          provision: string
+          ref: string | null
+          requirement_text: string
+          section: string
+          seed_id: string
+          seq: number
+          sheet: string
+          sort_order: number
+          version_id: string
+        }
+        Insert: {
+          approved_document?: string | null
+          default_discipline?: string | null
+          heading?: string | null
+          id?: string
+          legislation_url?: string | null
+          provision: string
+          ref?: string | null
+          requirement_text: string
+          section: string
+          seed_id: string
+          seq: number
+          sheet: string
+          sort_order: number
+          version_id: string
+        }
+        Update: {
+          approved_document?: string | null
+          default_discipline?: string | null
+          heading?: string | null
+          id?: string
+          legislation_url?: string | null
+          provision?: string
+          ref?: string | null
+          requirement_text?: string
+          section?: string
+          seed_id?: string
+          seq?: number
+          sheet?: string
+          sort_order?: number
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requirements_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           checklist_item_id: string | null
@@ -706,6 +985,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           added_by: string | null
+          appointment_ended_on: string | null
           chasing_paused: boolean
           created_at: string
           declined_at: string | null
@@ -725,6 +1005,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           added_by?: string | null
+          appointment_ended_on?: string | null
           chasing_paused?: boolean
           created_at?: string
           declined_at?: string | null
@@ -744,6 +1025,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           added_by?: string | null
+          appointment_ended_on?: string | null
           chasing_paused?: boolean
           created_at?: string
           declined_at?: string | null
@@ -773,9 +1055,12 @@ export type Database = {
       projects: {
         Row: {
           address: string
+          bc_application_date: string | null
+          catalogue_version_id: string | null
           cdm_pd_certified: boolean
           clock_offset_days: number
           construction_start_date: string | null
+          construction_started_on: string | null
           created_at: string
           created_by: string | null
           demo_started_at: string | null
@@ -789,15 +1074,20 @@ export type Database = {
           is_higher_risk: boolean
           jurisdiction: Database["public"]["Enums"]["jurisdiction"]
           name: string
+          occupation_date: string | null
           retention_years: number
           status: Database["public"]["Enums"]["project_status"]
           updated_at: string
+          work_completed_on: string | null
         }
         Insert: {
           address?: string
+          bc_application_date?: string | null
+          catalogue_version_id?: string | null
           cdm_pd_certified?: boolean
           clock_offset_days?: number
           construction_start_date?: string | null
+          construction_started_on?: string | null
           created_at?: string
           created_by?: string | null
           demo_started_at?: string | null
@@ -814,12 +1104,16 @@ export type Database = {
           retention_years?: number
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
+          work_completed_on?: string | null
         }
         Update: {
           address?: string
+          bc_application_date?: string | null
+          catalogue_version_id?: string | null
           cdm_pd_certified?: boolean
           clock_offset_days?: number
           construction_start_date?: string | null
+          construction_started_on?: string | null
           created_at?: string
           created_by?: string | null
           demo_started_at?: string | null
@@ -833,9 +1127,11 @@ export type Database = {
           is_higher_risk?: boolean
           jurisdiction?: Database["public"]["Enums"]["jurisdiction"]
           name?: string
+          occupation_date?: string | null
           retention_years?: number
           status?: Database["public"]["Enums"]["project_status"]
           updated_at?: string
+          work_completed_on?: string | null
         }
         Relationships: []
       }
@@ -983,6 +1279,46 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      role_briefings: {
+        Row: {
+          created_at: string
+          id: string
+          intro: string
+          role: Database["public"]["Enums"]["dutyholder_role"]
+          role_label: string
+          sources: string[]
+          statutory_text: string
+          superseded_at: string | null
+          template_code: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intro: string
+          role: Database["public"]["Enums"]["dutyholder_role"]
+          role_label: string
+          sources: string[]
+          statutory_text: string
+          superseded_at?: string | null
+          template_code: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intro?: string
+          role?: Database["public"]["Enums"]["dutyholder_role"]
+          role_label?: string
+          sources?: string[]
+          statutory_text?: string
+          superseded_at?: string | null
+          template_code?: string
+          version?: number
+        }
+        Relationships: [
         ]
       }
       signatures: {
@@ -1309,6 +1645,47 @@ export type Database = {
         Args: { p_item_id: string; p_text: string }
         Returns: undefined
       }
+      is_project_principal: { Args: { p_project_id: string }; Returns: boolean }
+      previous_handovers: {
+        Args: { p_item_id: string }
+        Returns: {
+          appointment_ended_on: string
+          completed_at: string
+          handover_text: string
+          name: string
+        }[]
+      }
+      raise_concern: {
+        Args: { p_body: string; p_kind: string; p_project_id: string; p_subject: string }
+        Returns: string
+      }
+      respond_to_concern: { Args: { p_body: string; p_concern_id: string }; Returns: string }
+      assign_requirement: {
+        Args: { p_id: string; p_owner: string | null; p_stage2: string | null; p_stage3: string | null; p_stage4: string | null; p_stage5: string | null }
+        Returns: undefined
+      }
+      assign_requirements_by_discipline: { Args: { p_project_id: string }; Returns: number }
+      is_tracker_coordinator: { Args: { p_project_id: string }; Returns: boolean }
+      save_requirement_answer: {
+        Args: {
+          p_guidance: string
+          p_id: string
+          p_notes: string
+          p_project_application: string
+          p_route: Database["public"]["Enums"]["compliance_route"] | null
+          p_standard_basis: string
+          p_status: Database["public"]["Enums"]["requirement_status"]
+        }
+        Returns: undefined
+      }
+      set_requirement_action: {
+        Args: { p_due: string | null; p_id: string; p_member: string | null; p_text: string }
+        Returns: undefined
+      }
+      set_requirement_relevance: {
+        Args: { p_ids: string[]; p_reason: string; p_relevance: Database["public"]["Enums"]["requirement_relevance"] }
+        Returns: number
+      }
       sha256_hex: { Args: { p_value: string }; Returns: string }
       shares_project_with: { Args: { p_user_id: string }; Returns: boolean }
       sign_acknowledgement: {
@@ -1325,6 +1702,7 @@ export type Database = {
         Returns: string
       }
       start_competence_draft: { Args: never; Returns: string }
+      statement_to_sign: { Args: { p_item_id: string }; Returns: string }
       submit_competence: { Args: { p_item_id: string }; Returns: string }
       submit_competence_passport: { Args: never; Returns: string }
       use_recovery_code: { Args: { p_code: string }; Returns: boolean }
@@ -1358,6 +1736,9 @@ export type Database = {
       }
     }
     Enums: {
+      compliance_route: "approved_document" | "iso_en_bs" | "eurocode" | "engineered" | "performance_certified"
+      requirement_relevance: "to_confirm" | "relevant" | "not_relevant"
+      requirement_status: "not_started" | "design_in_progress" | "ready_for_submission" | "submitted_for_approval" | "granted_conditional" | "granted"
       appointment_kind:
         | "pd_appointment"
         | "pc_appointment"

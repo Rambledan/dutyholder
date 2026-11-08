@@ -5,7 +5,7 @@
 import { roleLabel, type DutyholderRole } from "@/lib/labels";
 
 export type NavIcon =
-  | "projects" | "new" | "dashboard" | "people" | "tasks" | "exports" | "settings"
+  | "projects" | "new" | "dashboard" | "people" | "dates" | "tasks" | "tracker" | "concerns" | "exports" | "settings"
   | "report" | "details" | "competence" | "help";
 
 export type NavItem = { href: string; label: string; icon: NavIcon; count?: number };
@@ -52,11 +52,17 @@ export function navSections(project: ProjectScope | null): NavSection[] {
       items.push(
         { href: `${base}/dashboard`, label: "Dashboard", icon: "dashboard" },
         { href: base, label: "People & appointments", icon: "people" },
+        { href: `${base}/dates`, label: "Key dates", icon: "dates" },
       );
     }
     // Anyone holding a statutory role has duties of their own to complete.
     if (project.roles.length > 0) {
       items.push({ href: `${base}/tasks`, label: "My tasks", icon: "tasks", count: project.openTasks || undefined });
+    }
+    // The tracker, and concerns between dutyholders, are for the whole team.
+    if (project.isOwner || project.roles.length > 0) {
+      items.push({ href: `${base}/tracker`, label: "Requirements", icon: "tracker" });
+      items.push({ href: `${base}/concerns`, label: "Concerns", icon: "concerns" });
     }
     if (project.isOwner) {
       items.push(

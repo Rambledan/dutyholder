@@ -99,6 +99,73 @@ describe("evidence pack", () => {
     ]));
     expect([...pack.entries.keys()].some((p) => p.endsWith("PD_appointment_awaiting_signatures.pdf"))).toBe(true);
   });
+
+  it("files concerns with their responses in 06_Concerns, and flags any without one", async () => {
+    const d = data({ concerns: [
+      { id: "c1", kind: "design_concern", subject: "Fire stopping at party wall", body: "Detail 12 conflicts with the fire strategy.",
+        body_sha256: "e".repeat(64), raised_by_member_id: "m-sam", created_at: "2026-11-05T10:00:00Z", ip_address: null,
+        responses: [{ responder_member_id: "m-pd", body: "Revised as rev C.", body_sha256: "f".repeat(64), created_at: "2026-11-06T10:00:00Z", ip_address: null }] },
+      { id: "c2", kind: "pc_comment", subject: "Cavity barriers", body: "Not shown on the elevations.",
+        body_sha256: "1".repeat(64), raised_by_member_id: "m-sam", created_at: "2026-11-06T11:00:00Z", ip_address: null, responses: [] },
+    ] });
+    const pack = await buildPack(d);
+    expect(pack.entries.has(`${pack.ref}/06_Concerns/Concerns_and_responses.pdf`)).toBe(true);
+    expect(pack.entries.has(`${pack.ref}/06_Concerns/README.txt`)).toBe(false);
+    expect(pack.warnings).toEqual([expect.stringContaining('"Cavity barriers"')]);
+  });
+
+  it("files the tracker in 08_Relevant_Requirements and flags the gaps", async () => {
+    const row = {
+      sheet: "Sch.1-Part B", section: "Schedule 1 Part B Fire Safety", ref: "B1", provision: "B1 Means of Warning & Escape", sort_order: 10,
+      legislation_url: null, approved_document: "Approved Document B", relevance: "relevant", relevance_reason: "", owner_member_id: "m-sam",
+      stage2_member_id: null, stage3_member_id: null, stage4_member_id: null, stage5_member_id: null, route: "approved_document",
+      guidance: "ADB", standard_basis: "", project_application: "Stay-put strategy.", notes: "", status: "design_in_progress",
+      action_text: "", action_member_id: null, action_due: null, updated_at: "2026-11-08T10:00:00Z",
+    };
+    const pack = await buildPack(data({ requirements: [row, { ...row, ref: "B2", provision: "B2", relevance: "to_confirm", owner_member_id: null, project_application: "" }] }));
+    expect(pack.entries.has(`${pack.ref}/08_Relevant_Requirements/Relevant_requirements_tracker.pdf`)).toBe(true);
+    const csv = new TextDecoder().decode(pack.entries.get(`${pack.ref}/08_Relevant_Requirements/Relevant_requirements_tracker.csv`)!);
+    expect(csv).toContain("Stay-put strategy.");
+    expect(csv).toContain("Sam Structures");
+    expect(pack.warnings).toEqual([expect.stringContaining("1 requirement not yet confirmed")]);
+  });
+
+  it("explains 09_Completion before the work is complete", async () => {
+    const pack = await buildPack(data());
+    expect(pack.entries.has(`${pack.ref}/09_Completion/README.txt`)).toBe(true);
+  });
+
+  it("files the completion notice, each signed statement and the handovers in 09_Completion (reg 16)", async () => {
+    const d = data();
+    d.project.construction_started_on = "2027-01-11";
+    d.project.work_completed_on = "2027-09-01";
+    d.members.push({ id: "m-pc", name: "Bea Builder", email: "bea@x.test", role: "principal_contractor", discipline: null,
+      is_firm: true, is_owner: false, removed_at: null, phone: "0161 000 0000", company: "Builder Ltd" });
+    d.items.push(
+      { id: "i-st-pd", member_id: "m-pd", code: "PD-16-COMPLETION", title: "Sign your completion statement", legal_reference: "Reg 16(4A)",
+        item_type: "acknowledge", status: "complete", answer: null, completed_at: "2027-09-02T10:00:00Z", competence_statement_id: null,
+        due_date: "2027-09-06" },
+      { id: "i-st-pc", member_id: "m-pc", code: "PC-16-COMPLETION", title: "Sign your completion statement", legal_reference: "Reg 16(4A)",
+        item_type: "acknowledge", status: "not_started", answer: null, completed_at: null, competence_statement_id: null,
+        due_date: "2027-09-06" },
+    );
+    d.signatures.push({ checklist_item_id: "i-st-pd", member_id: "m-pd", typed_name: "Pat Designer",
+      statement: "I, Pat Designer, state that I was appointed as principal designer…", statement_sha256: "d".repeat(64),
+      template_code: "PD-16-COMPLETION", template_version: 1, signed_at: "2027-09-02T10:00:00Z", ip_address: "1.2.3.4" });
+
+    const pack = await buildPack(d);
+    const paths = [...pack.entries.keys()].map((p) => p.replace(`${pack.ref}/`, ""));
+    expect(paths).toEqual(expect.arrayContaining([
+      "09_Completion/Completion_notice_reg16.pdf",
+      "09_Completion/Statements/Pat_Designer_PD-16-COMPLETION.pdf",
+      "09_Completion/Handover/Principal_designer_handover_11M5b.pdf",
+    ]));
+    // Not filed as a duty acknowledgement, and the missing statement is flagged.
+    expect(paths).not.toContain("04_Duty_Acknowledgements/Pat_Designer/Acknowledgements.pdf");
+    expect(pack.warnings).toEqual(expect.arrayContaining([
+      expect.stringContaining("Bea Builder: completion statement (reg 16(4A)) not signed"),
+    ]));
+  });
 });
 
 describe("audit trail CSV", () => {

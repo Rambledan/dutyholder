@@ -15,8 +15,8 @@ export default defineSegment({
 		"Not sure what a term means? Hover over any question mark for a plain-English explanation.",
 
 	mount(el) {
-		screen = new AppScreen(el, "Step 4 / 10", [
-			{ src: helpMark, url: "dutyholder.vercel.app/projects/new", masks: [pad(h.devNote, [4, 3])] },
+		screen = new AppScreen(el, "Step 4 / 11", [
+			{ src: helpMark, url: "dutyholder.vercel.app/projects/new" },
 		]);
 	},
 

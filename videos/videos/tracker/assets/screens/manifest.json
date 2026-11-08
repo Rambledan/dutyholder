@@ -1,0 +1,154 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "screens": {
+    "01-overview": {
+      "file": "01-overview.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "heading": {
+          "x": 432,
+          "y": 100,
+          "w": 864,
+          "h": 48
+        },
+        "grid": {
+          "x": 457,
+          "y": 370,
+          "w": 814,
+          "h": 1039
+        },
+        "assign": {
+          "x": 457,
+          "y": 1424,
+          "w": 164,
+          "h": 40
+        }
+      }
+    },
+    "02-assigned": {
+      "file": "02-assigned.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "partB": {
+          "x": 457,
+          "y": 120,
+          "w": 814,
+          "h": 848
+        },
+        "first": {
+          "x": 458,
+          "y": 121,
+          "w": 812,
+          "h": 77
+        }
+      }
+    },
+    "03-not-relevant": {
+      "file": "03-not-relevant.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "requirement": {
+          "x": 457,
+          "y": 179,
+          "w": 814,
+          "h": 156
+        },
+        "decision": {
+          "x": 432,
+          "y": 408,
+          "w": 864,
+          "h": 268
+        }
+      }
+    },
+    "04-my-requirements": {
+      "file": "04-my-requirements.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "heading": {
+          "x": 432,
+          "y": 100,
+          "w": 864,
+          "h": 48
+        },
+        "list": {
+          "x": 457,
+          "y": 369,
+          "w": 814,
+          "h": 848
+        }
+      }
+    },
+    "05-answer": {
+      "file": "05-answer.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "answer": {
+          "x": 457,
+          "y": 258,
+          "w": 814,
+          "h": 492
+        },
+        "application": {
+          "x": 457,
+          "y": 430,
+          "w": 814,
+          "h": 64
+        }
+      }
+    },
+    "06-progress": {
+      "file": "06-progress.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "grid": {
+          "x": 457,
+          "y": 370,
+          "w": 814,
+          "h": 1039
+        },
+        "summary": {
+          "x": 457,
+          "y": 326,
+          "w": 814,
+          "h": 20
+        }
+      }
+    },
+    "07-evidence": {
+      "file": "07-evidence.png",
+      "fullPage": false,
+      "width": 1440,
+      "height": 900,
+      "highlights": {
+        "create": {
+          "x": 457,
+          "y": 255,
+          "w": 194,
+          "h": 44
+        },
+        "download": {
+          "x": 1158,
+          "y": 433,
+          "w": 100,
+          "h": 40
+        }
+      }
+    }
+  }
+}
