@@ -34,7 +34,9 @@ export async function sendEmail(message: {
         subject: message.subject,
         html: message.html,
         text: message.text,
-        reply_to: message.replyTo,
+        // Optional EMAIL_REPLY_TO sends replies to a real inbox instead of
+        // the sending address.
+        reply_to: message.replyTo ?? (process.env.EMAIL_REPLY_TO || undefined),
       }),
     });
     const body = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
